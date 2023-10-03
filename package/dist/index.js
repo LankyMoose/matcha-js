@@ -1,0 +1,151 @@
+class PatternMatcher {
+    matched = false;
+    error = null;
+    constructor(value, patterns) {
+        let match;
+        for (const pattern of patterns) {
+            const [lhs] = pattern;
+            switch (typeof value) {
+                case "string":
+                    this.matched =
+                        lhs === String || (typeof lhs === "string" && lhs === value);
+                    break;
+                case "number":
+                    this.matched =
+                        lhs === Number || (typeof lhs === "number" && lhs === value);
+                    break;
+                case "boolean":
+                    this.matched =
+                        lhs === Boolean || (typeof lhs === "boolean" && lhs === value);
+                    break;
+                case "bigint":
+                    this.matched =
+                        lhs === BigInt || (typeof lhs === "bigint" && lhs === value);
+                    break;
+                case "symbol":
+                    this.matched =
+                        lhs === Symbol || (typeof lhs === "symbol" && lhs === value);
+                    break;
+                case "function":
+                    this.matched =
+                        lhs === Function || (typeof lhs === "function" && lhs === value);
+                    break;
+                default:
+                    break;
+            }
+            if (this.matched) {
+                match = pattern;
+                break;
+            }
+            if (value instanceof Error) {
+                this.matched = lhs === Error || (lhs instanceof Error && lhs === value);
+                if (this.matched) {
+                    match = pattern;
+                    break;
+                }
+            }
+            if (value instanceof Promise) {
+                this.matched =
+                    lhs === Promise || (lhs instanceof Promise && lhs === value);
+                if (this.matched) {
+                    match = pattern;
+                    break;
+                }
+            }
+            if (value === null) {
+                this.matched = lhs === null;
+                if (this.matched) {
+                    match = pattern;
+                    break;
+                }
+            }
+            if (value === undefined) {
+                this.matched = lhs === undefined;
+                if (this.matched) {
+                    match = pattern;
+                    break;
+                }
+            }
+            if (Array.isArray(value)) {
+                console.log("array", lhs, value);
+                if (lhs === Array) {
+                    this.matched = true;
+                }
+                else if (Array.isArray(lhs)) {
+                    this.matched =
+                        lhs.length === value.length &&
+                            lhs.every((p, i) => String(p) === String(value[i]));
+                }
+                else {
+                    continue;
+                }
+                if (this.matched) {
+                    match = pattern;
+                    break;
+                }
+            }
+            if (isObject(value)) {
+                if (isConstructor(lhs)) {
+                    this.matched = value instanceof lhs;
+                    if (this.matched) {
+                        match = pattern;
+                        break;
+                    }
+                }
+                if (lhs === Object) {
+                    this.matched = true;
+                }
+                else if (isObject(lhs)) {
+                    const aKeys = Object.keys(value);
+                    const bKeys = Object.keys(lhs);
+                    this.matched =
+                        aKeys.length === bKeys.length &&
+                            aKeys.every((p) => lhs[p] === value[p]);
+                }
+                else {
+                    continue;
+                }
+                if (this.matched) {
+                    match = pattern;
+                    console.log("obj match", pattern, value);
+                    break;
+                }
+            }
+        }
+        if (match) {
+            try {
+                match[1]();
+            }
+            catch (error) {
+                this.error = error;
+            }
+        }
+    }
+    or(fallback) {
+        if (this.matched)
+            return this;
+        fallback();
+        return this;
+    }
+    catch(fallback) {
+        if (this.error)
+            fallback(this.error);
+        return this;
+    }
+}
+function isConstructor(value) {
+    return (typeof value === "function" &&
+        value.prototype &&
+        value.prototype.constructor === value);
+}
+function isObject(value) {
+    return (typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value) &&
+        !(value instanceof Promise));
+}
+export function match(x) {
+    return {
+        with: (...patterns) => new PatternMatcher(x, patterns),
+    };
+}

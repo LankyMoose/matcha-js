@@ -161,6 +161,6 @@ function isObject(value: any): value is Object {
 
 export function match(x: any) {
   return {
-    with: (patterns: Pattern[]) => new PatternMatcher(x, patterns),
+    with: (...patterns: Pattern[]) => new PatternMatcher(x, patterns),
   }
 }
