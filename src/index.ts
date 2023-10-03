@@ -1,18 +1,27 @@
 import { match } from "./match.js"
 
-match({ a: { b: 123 } })
+const myObject = { a: { b: 123 } }
+
+class Person {
+  constructor(public name: string) {}
+}
+
+class Student extends Person {
+  constructor(public name: string, public grade: number) {
+    super(name)
+  }
+}
+
+const sam = new Student("sam", 1)
+
+match(sam)
   .with([
-    [{}, () => console.log("empty object")],
-    [{ a: 123 }, () => console.log("object with a:123")],
-    [{ a: { b: 123 } }, () => console.log("object with a: { b: 123 }")],
-    [Object, () => console.log("object type")],
-    [[], () => console.log("empty array")],
-    [[1, 2, 3], () => console.log("array with values 1,2,3")],
-    [123, () => console.log("number")],
-    ["", () => console.log("empty string")],
-    [String, () => console.log("string type")],
-    [Number, () => console.log("number type")],
-    [Error, () => console.log("error type")],
+    [Student, () => console.log("is Student")],
+    [Person, () => console.log("is person")],
   ])
   .or(() => console.log("no match"))
   .catch((e) => console.log(e))
+
+match({ a: 123 }).with([
+  [{ a: 123 }, () => console.log("is object with a: 123")],
+])

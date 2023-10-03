@@ -94,6 +94,13 @@ class PatternMatcher {
       }
 
       if (isObject(value)) {
+        if (isConstructor(lhs)) {
+          this.matched = value instanceof lhs
+          if (this.matched) {
+            match = pattern
+            break
+          }
+        }
         if (lhs === Object) {
           this.matched = true
         } else if (isObject(lhs)) {
@@ -101,7 +108,7 @@ class PatternMatcher {
           const bKeys = Object.keys(lhs)
           this.matched =
             aKeys.length === bKeys.length &&
-            aKeys.every((p) => String(lhs[p]) === String(value[p]))
+            aKeys.every((p) => lhs[p] === value[p])
         } else {
           continue
         }
@@ -135,7 +142,15 @@ class PatternMatcher {
   }
 }
 
-function isObject(value: any) {
+function isConstructor(value: any): value is new (...args: any[]) => any {
+  return (
+    typeof value === "function" &&
+    value.prototype &&
+    value.prototype.constructor === value
+  )
+}
+
+function isObject(value: any): value is Object {
   return (
     typeof value === "object" &&
     value !== null &&
