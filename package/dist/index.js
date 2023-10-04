@@ -1,7 +1,15 @@
+import { isObject, isConstructor } from "./util.js";
+import { AnyValue } from "./value.js";
+export * from "./value.js";
+export { match, PatternMatcher };
 class PatternMatcher {
-    matched = false;
-    error = null;
     constructor(value, patterns) {
+        Object.defineProperty(this, "matched", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
         let match;
         for (const pattern of patterns) {
             const [lhs] = pattern;
@@ -33,48 +41,36 @@ class PatternMatcher {
                 default:
                     break;
             }
+            if (AnyValue.isAnyValue(lhs))
+                this.matched = lhs.match(value);
             if (this.matched) {
                 match = pattern;
                 break;
             }
-            if (value instanceof Error) {
-                this.matched = lhs === Error || (lhs instanceof Error && lhs === value);
-                if (this.matched) {
-                    match = pattern;
-                    break;
+            for (const classRef of [Error, Promise, Date]) {
+                if (value instanceof classRef) {
+                    this.matched = lhs === classRef || lhs === value.constructor;
+                    if (this.matched) {
+                        match = pattern;
+                        break;
+                    }
                 }
             }
-            if (value instanceof Promise) {
-                this.matched =
-                    lhs === Promise || (lhs instanceof Promise && lhs === value);
-                if (this.matched) {
-                    match = pattern;
-                    break;
-                }
-            }
-            if (value === null) {
-                this.matched = lhs === null;
-                if (this.matched) {
-                    match = pattern;
-                    break;
-                }
-            }
-            if (value === undefined) {
-                this.matched = lhs === undefined;
+            if (value === null || value === undefined) {
+                this.matched = lhs === value;
                 if (this.matched) {
                     match = pattern;
                     break;
                 }
             }
             if (Array.isArray(value)) {
-                console.log("array", lhs, value);
                 if (lhs === Array) {
                     this.matched = true;
                 }
                 else if (Array.isArray(lhs)) {
                     this.matched =
                         lhs.length === value.length &&
-                            lhs.every((p, i) => String(p) === String(value[i]));
+                            lhs.every((p, i) => p === value[i] || (p instanceof AnyValue && p.match(value[i])));
                 }
                 else {
                     continue;
@@ -100,51 +96,28 @@ class PatternMatcher {
                     const bKeys = Object.keys(lhs);
                     this.matched =
                         aKeys.length === bKeys.length &&
-                            aKeys.every((p) => lhs[p] === value[p]);
+                            aKeys.every((p) => lhs[p] === value[p] ||
+                                (lhs[p] instanceof AnyValue && lhs[p].match(value[p])));
                 }
                 else {
                     continue;
                 }
                 if (this.matched) {
                     match = pattern;
-                    console.log("obj match", pattern, value);
                     break;
                 }
             }
         }
-        if (match) {
-            try {
-                match[1]();
-            }
-            catch (error) {
-                this.error = error;
-            }
-        }
+        match && match[1]();
     }
-    or(fallback) {
+    orElse(fallback) {
         if (this.matched)
             return this;
         fallback();
         return this;
     }
-    catch(fallback) {
-        if (this.error)
-            fallback(this.error);
-        return this;
-    }
 }
-function isConstructor(value) {
-    return (typeof value === "function" &&
-        value.prototype &&
-        value.prototype.constructor === value);
-}
-function isObject(value) {
-    return (typeof value === "object" &&
-        value !== null &&
-        !Array.isArray(value) &&
-        !(value instanceof Promise));
-}
-export function match(x) {
+function match(x) {
     return {
         with: (...patterns) => new PatternMatcher(x, patterns),
     };

@@ -1,12 +1,11 @@
+export * from "./value.js";
+export { match, PatternMatcher };
 type Pattern = [any, () => any];
 declare class PatternMatcher {
-    matched: boolean;
-    error: null;
+    private matched;
     constructor(value: any, patterns: Pattern[]);
-    or(fallback: () => any): this;
-    catch(fallback: (e: Error) => any): this;
+    orElse(fallback: () => any): this;
 }
-export declare function match(x: any): {
+declare function match(x: any): {
     with: (...patterns: Pattern[]) => PatternMatcher;
 };
-export {};

@@ -1,5 +1,5 @@
 {
-  "name": "patternmatch-demo",
+  "name": "patternmatcher-demo",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "patternmatch-js": "workspace:^"
+    "patternmatcher": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "^20.8.2"

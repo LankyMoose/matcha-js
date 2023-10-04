@@ -1,20 +1,20 @@
-import { match } from "patternmatch-js"
+import { match, any, pattern } from "patternmatcher"
 
-class Person {
-  constructor(public name: string) {}
-}
+const point = { x: 123, y: 123 }
+match(point)
+  .with([{ x: 123, y: any(Number) }, () => console.log("x is 123 and y is a number")])
+  .orElse(() => console.log("no match"))
 
-class Student extends Person {
-  constructor(public name: string, public grade: number) {
-    super(name)
-  }
-}
+const numString = "123"
+match(numString)
+  .with([pattern(/^[0-9]+$/), () => console.log("value is a string of numbers")])
+  .orElse(() => console.log("value is not a string of numbers"))
 
-const sam = new Student("sam", 1)
-match(sam)
+const value = "Hello World"
+
+match(value)
   .with(
-    [Student, () => console.log("is Student")],
-    [Person, () => console.log("is person")]
+    [pattern(/^[a-zA-Z ]+$/), () => console.log("value is a string of letters")],
+    [pattern(/^[0-9]+$/), () => console.log("value is a string of numbers")]
   )
-  .or(() => console.log("no match"))
-  .catch((e) => console.log(e))
+  .orElse(() => console.log("no match"))
