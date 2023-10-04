@@ -49,20 +49,14 @@ function deepArrayEq(arrA: Array<unknown>, arrB: Array<unknown>) {
   }
 
   for (let i = 0; i < arrA.length; i++) {
-    if (Array.isArray(arrA[i]) && Array.isArray(arrB[i])) {
-      if (!deepArrayEq(arrA[i] as Array<unknown>, arrB[i] as Array<unknown>)) {
-        console.log("arrays not equal")
-        return false
-      }
-    } else {
-      const a = arrA[i]
-      const b = arrB[i]
-      if (AnyValue.isAnyValue(a) && a.match(b)) continue
-      if (DefaultValue.isDefaultValue(a)) continue
-      if (isObject(a) && isObject(b) && deepObjectEq(a, b)) continue
-      if (Array.isArray(a) && Array.isArray(b) && deepArrayEq(a, b)) continue
-      if (a !== b) return false
-    }
+    const a = arrA[i]
+    const b = arrB[i]
+
+    if (AnyValue.isAnyValue(a) && a.match(b)) continue
+    if (DefaultValue.isDefaultValue(a)) continue
+    if (isObject(a) && isObject(b) && deepObjectEq(a, b)) continue
+    if (Array.isArray(a) && Array.isArray(b) && deepArrayEq(a, b)) continue
+    if (a !== b) return false
   }
   return true
 }
