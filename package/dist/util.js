@@ -15,10 +15,11 @@ function deepObjectEq(objA, objB) {
     const aKeys = Object.keys(objA).sort();
     const bKeys = Object.keys(objB).sort();
     if (aKeys.length !== bKeys.length) {
-        //return false
+        return false;
     }
     for (let i = 0; i < aKeys.length; i++) {
-        //if (aKeys[i] !== bKeys[i]) return false
+        if (aKeys[i] !== bKeys[i])
+            return false;
         const a = objA[aKeys[i]];
         const b = objB[bKeys[i]];
         if (Value.match(a, b))

@@ -29,13 +29,7 @@ class AnyValue {
 }
 const _ = new AnyValue();
 class TypedValue {
-    constructor(classRef) {
-        Object.defineProperty(this, "classRef", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: classRef
-        });
+    constructor(...classRefs) {
         // @ts-expect-error
         Object.defineProperty(this, "__isOfType", {
             enumerable: true,
@@ -43,22 +37,23 @@ class TypedValue {
             writable: true,
             value: true
         });
+        Object.defineProperty(this, "classRefs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.classRefs = classRefs;
     }
     static isTypedValue(val) {
         return typeof val === "object" && "__isOfType" in val;
     }
     match(val) {
-        return matchType(this.classRef, val);
+        return matchTypes(val, ...this.classRefs);
     }
 }
 class OptionalValue {
-    constructor(classRef) {
-        Object.defineProperty(this, "classRef", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: classRef
-        });
+    constructor(...classRefs) {
         // @ts-expect-error
         Object.defineProperty(this, "__isOptional", {
             enumerable: true,
@@ -66,6 +61,13 @@ class OptionalValue {
             writable: true,
             value: true
         });
+        Object.defineProperty(this, "classRefs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.classRefs = classRefs;
     }
     static isOptionalValue(val) {
         return typeof val === "object" && "__isOptional" in val;
@@ -75,17 +77,11 @@ class OptionalValue {
             return true;
         if (val === null)
             return false; // null is not optional
-        return matchType(this.classRef, val);
+        return matchTypes(val, ...this.classRefs);
     }
 }
 class NullableValue {
-    constructor(classRef) {
-        Object.defineProperty(this, "classRef", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: classRef
-        });
+    constructor(...classRefs) {
         // @ts-expect-error
         Object.defineProperty(this, "__isNullable", {
             enumerable: true,
@@ -93,6 +89,13 @@ class NullableValue {
             writable: true,
             value: true
         });
+        Object.defineProperty(this, "classRefs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.classRefs = classRefs;
     }
     static isNullableValue(val) {
         return typeof val === "object" && "__isNullable" in val;
@@ -102,20 +105,23 @@ class NullableValue {
             return true;
         if (val === undefined)
             return false; // undefined is not nullable
-        return matchType(this.classRef, val);
+        return matchTypes(val, ...this.classRefs);
     }
 }
-function optional(classRef) {
-    return new OptionalValue(classRef);
+function optional(...classRefs) {
+    return new OptionalValue(...classRefs);
 }
-function type(classRef) {
-    return new TypedValue(classRef);
+function type(...classRefs) {
+    return new TypedValue(...classRefs);
 }
-function nullable(classRef) {
-    return new NullableValue(classRef);
+function nullable(...classRefs) {
+    return new NullableValue(...classRefs);
 }
-function matchType(targetClass, val) {
-    switch (targetClass) {
+function matchTypes(val, ...classRefs) {
+    return classRefs.some((classRef) => matchType(val, classRef));
+}
+function matchType(val, classRef) {
+    switch (classRef) {
         case String:
             return typeof val === "string";
         case Number:
@@ -137,6 +143,6 @@ function matchType(targetClass, val) {
         case Date:
             return val instanceof Date;
         default:
-            return val instanceof targetClass;
+            return val instanceof classRef;
     }
 }

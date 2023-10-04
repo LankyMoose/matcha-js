@@ -2,6 +2,8 @@ import { isObject } from "./util.js"
 
 export { type, optional, nullable, Value, _ }
 
+type ClassRef<T> = PrimitiveConstructor | Constructor<T>
+
 class Value {
   static match<T>(lhs: any, val: T) {
     if (AnyValue.isAnyValue(lhs)) return true
@@ -26,61 +28,74 @@ const _ = new AnyValue()
 class TypedValue<T> {
   // @ts-expect-error
   private readonly __isOfType = true
-  constructor(private classRef: PrimitiveConstructor | Constructor<T>) {}
+  classRefs: Array<ClassRef<T>>
+  constructor(...classRefs: Array<ClassRef<T>>) {
+    this.classRefs = classRefs
+  }
   static isTypedValue(val: any): val is TypedValue<any> {
     return typeof val === "object" && "__isOfType" in val
   }
 
   match(val: any) {
-    return matchType(this.classRef, val)
+    return matchTypes(val, ...this.classRefs)
   }
 }
 
 class OptionalValue<T = void> {
   // @ts-expect-error
   private readonly __isOptional = true
-  constructor(private classRef: PrimitiveConstructor | Constructor<T>) {}
+  classRefs: Array<ClassRef<T>>
+  constructor(...classRefs: Array<ClassRef<T>>) {
+    this.classRefs = classRefs
+  }
   static isOptionalValue(val: any): val is OptionalValue<any> {
     return typeof val === "object" && "__isOptional" in val
   }
   match(val: any) {
     if (val === undefined) return true
     if (val === null) return false // null is not optional
-    return matchType(this.classRef, val)
+    return matchTypes(val, ...this.classRefs)
   }
 }
 
 class NullableValue<T = void> {
   // @ts-expect-error
   private readonly __isNullable = true
-  constructor(private classRef: PrimitiveConstructor | Constructor<T>) {}
+  classRefs: Array<ClassRef<T>>
+  constructor(...classRefs: Array<ClassRef<T>>) {
+    this.classRefs = classRefs
+  }
   static isNullableValue(val: any): val is NullableValue<any> {
     return typeof val === "object" && "__isNullable" in val
   }
   match(val: any) {
     if (val === null) return true
     if (val === undefined) return false // undefined is not nullable
-    return matchType(this.classRef, val)
+    return matchTypes(val, ...this.classRefs)
   }
 }
 
-function optional<T>(classRef: PrimitiveConstructor | Constructor<T>) {
-  return new OptionalValue(classRef)
+function optional<T>(...classRefs: ClassRef<T>[]) {
+  return new OptionalValue(...classRefs)
 }
 
-function type<T>(classRef: PrimitiveConstructor | Constructor<T>) {
-  return new TypedValue(classRef)
+function type<T>(...classRefs: ClassRef<T>[]) {
+  return new TypedValue(...classRefs)
 }
 
-function nullable<T>(classRef: PrimitiveConstructor | Constructor<T>) {
-  return new NullableValue(classRef)
+function nullable<T>(...classRefs: ClassRef<T>[]) {
+  return new NullableValue(...classRefs)
 }
 
-function matchType<T>(
-  targetClass: PrimitiveConstructor | Constructor<T>,
-  val: any
+function matchTypes<T>(
+  val: any,
+  ...classRefs: Array<PrimitiveConstructor | Constructor<T>>
 ) {
-  switch (targetClass) {
+  return classRefs.some((classRef) => matchType(val, classRef))
+}
+
+function matchType<T>(val: any, classRef: ClassRef<T>) {
+  switch (classRef) {
     case String:
       return typeof val === "string"
     case Number:
@@ -102,6 +117,6 @@ function matchType<T>(
     case Date:
       return val instanceof Date
     default:
-      return val instanceof targetClass
+      return val instanceof classRef
   }
 }
