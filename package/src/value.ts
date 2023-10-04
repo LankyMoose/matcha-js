@@ -1,6 +1,6 @@
 import { isObject } from "./util.js"
 
-export { pattern, any, AnyValue, _, DefaultValue }
+export { any, AnyValue, _, DefaultValue }
 
 type ConstructorType<T> = new (...args: any[]) => T
 
@@ -21,12 +21,6 @@ class DefaultValue {
 }
 
 const _ = new DefaultValue()
-
-function pattern(regex: RegExp) {
-  return new AnyValue(
-    (val: any): val is string => typeof val === "string" && regex.test(val)
-  )
-}
 
 type PrimitiveConstructor =
   | StringConstructor

@@ -1,5 +1,5 @@
 import { isObject } from "./util.js";
-export { pattern, any, AnyValue, _, DefaultValue };
+export { any, AnyValue, _, DefaultValue };
 class AnyValue {
     constructor(match) {
         Object.defineProperty(this, "match", {
@@ -33,9 +33,6 @@ class DefaultValue {
     }
 }
 const _ = new DefaultValue();
-function pattern(regex) {
-    return new AnyValue((val) => typeof val === "string" && regex.test(val));
-}
 function any(classRef) {
     switch (classRef) {
         case String:
