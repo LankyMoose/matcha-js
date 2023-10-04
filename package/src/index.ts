@@ -1,123 +1,94 @@
 import { isObject, isConstructor } from "./util.js"
-import { AnyValue } from "./value.js"
+import { AnyValue, DefaultValue } from "./value.js"
 
 export * from "./value.js"
 
-export { match, PatternMatcher }
+export { match }
 
 type Pattern = [any, () => any]
 
-class PatternMatcher {
-  private matched = false
-  constructor(value: any, patterns: Pattern[]) {
-    let match: Pattern | undefined
-
+function match<T>(value: T) {
+  return <P extends Pattern[]>(...patterns: P): ReturnType<P[number][1]> => {
     for (const pattern of patterns) {
       const [lhs] = pattern
       switch (typeof value) {
         case "string":
-          this.matched = lhs === String || (typeof lhs === "string" && lhs === value)
+          if (lhs === String || (typeof lhs === "string" && lhs === value)) return pattern[1]()
           break
         case "number":
-          this.matched = lhs === Number || (typeof lhs === "number" && lhs === value)
+          if (lhs === Number || (typeof lhs === "number" && lhs === value)) return pattern[1]()
           break
         case "boolean":
-          this.matched = lhs === Boolean || (typeof lhs === "boolean" && lhs === value)
+          if (lhs === Boolean || (typeof lhs === "boolean" && lhs === value)) return pattern[1]()
           break
         case "bigint":
-          this.matched = lhs === BigInt || (typeof lhs === "bigint" && lhs === value)
+          if (lhs === BigInt || (typeof lhs === "bigint" && lhs === value)) return pattern[1]()
           break
         case "symbol":
-          this.matched = lhs === Symbol || (typeof lhs === "symbol" && lhs === value)
+          if (lhs === Symbol || (typeof lhs === "symbol" && lhs === value)) return pattern[1]()
           break
         case "function":
-          this.matched = lhs === Function || (typeof lhs === "function" && lhs === value)
+          if (lhs === Function || (typeof lhs === "function" && lhs === value)) return pattern[1]()
           break
         default:
           break
       }
 
-      if (AnyValue.isAnyValue(lhs)) this.matched = lhs.match(value)
-
-      if (this.matched) {
-        match = pattern
-        break
+      if (AnyValue.isAnyValue(lhs)) {
+        if (lhs.match(value)) return pattern[1]()
+      } else if (DefaultValue.isDefaultValue(lhs)) {
+        return pattern[1]()
       }
 
       for (const classRef of [Error, Promise, Date]) {
         if (value instanceof classRef) {
-          this.matched = lhs === classRef || lhs === value.constructor
-          if (this.matched) {
-            match = pattern
-            break
-          }
+          if (lhs === classRef || lhs === value.constructor) return pattern[1]()
         }
       }
 
       if (value === null || value === undefined) {
-        this.matched = lhs === value
-        if (this.matched) {
-          match = pattern
-          break
-        }
+        if (lhs === value) return pattern[1]()
       }
 
       if (Array.isArray(value)) {
         if (lhs === Array) {
-          this.matched = true
+          return pattern[1]()
         } else if (Array.isArray(lhs)) {
-          this.matched =
+          if (
             lhs.length === value.length &&
             lhs.every((p, i) => p === value[i] || (p instanceof AnyValue && p.match(value[i])))
+          ) {
+            return pattern[1]()
+          }
         } else {
           continue
-        }
-
-        if (this.matched) {
-          match = pattern
-          break
         }
       }
 
       if (isObject(value)) {
         if (isConstructor(lhs)) {
-          this.matched = value instanceof lhs
-          if (this.matched) {
-            match = pattern
-            break
-          }
+          if (value instanceof lhs) return pattern[1]()
         }
         if (lhs === Object) {
-          this.matched = true
+          return pattern[1]()
         } else if (isObject(lhs)) {
           const aKeys = Object.keys(value)
           const bKeys = Object.keys(lhs)
-          this.matched =
+          if (
             aKeys.length === bKeys.length &&
-            aKeys.every((p) => lhs[p] === value[p] || (lhs[p] instanceof AnyValue && lhs[p].match(value[p])))
+            aKeys.every(
+              (p) =>
+                lhs[p] === value[p as keyof typeof value] ||
+                (lhs[p] instanceof AnyValue && lhs[p].match(value[p as keyof typeof value]))
+            )
+          ) {
+            return pattern[1]()
+          }
         } else {
           continue
         }
-
-        if (this.matched) {
-          match = pattern
-          break
-        }
       }
     }
-
-    match && match[1]()
-  }
-
-  orElse(fallback: () => any) {
-    if (this.matched) return this
-    fallback()
-    return this
-  }
-}
-
-function match(x: any) {
-  return {
-    with: (...patterns: Pattern[]) => new PatternMatcher(x, patterns),
+    throw new Error("No match found")
   }
 }

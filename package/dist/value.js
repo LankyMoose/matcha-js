@@ -1,5 +1,5 @@
 import { isObject } from "./util.js";
-export { pattern, any, AnyValue };
+export { pattern, any, AnyValue, _, DefaultValue };
 class AnyValue {
     constructor(match) {
         Object.defineProperty(this, "match", {
@@ -19,6 +19,20 @@ class AnyValue {
         return typeof val === "object" && val.__isAny;
     }
 }
+class DefaultValue {
+    constructor() {
+        Object.defineProperty(this, "__isDefault", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: true
+        });
+    }
+    static isDefaultValue(val) {
+        return typeof val === "object" && val.__isDefault;
+    }
+}
+const _ = () => new DefaultValue();
 function pattern(regex) {
     return new AnyValue((val) => typeof val === "string" && regex.test(val));
 }

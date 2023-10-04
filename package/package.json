@@ -1,5 +1,5 @@
 {
-  "name": "patternmatcher",
+  "name": "patternblaze",
   "version": "1.0.0",
   "description": "A simple pattern matcher for javascript with zero dependancies",
   "main": "dist/index.js",

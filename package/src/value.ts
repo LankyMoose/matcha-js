@@ -1,6 +1,6 @@
 import { isObject } from "./util.js"
 
-export { pattern, any, AnyValue }
+export { pattern, any, AnyValue, _, DefaultValue }
 
 type ConstructorType<T> = new (...args: any[]) => T
 
@@ -11,6 +11,16 @@ class AnyValue<T> {
     return typeof val === "object" && val.__isAny
   }
 }
+
+class DefaultValue {
+  __isDefault = true
+  constructor() {}
+  static isDefaultValue(val: any): val is DefaultValue {
+    return typeof val === "object" && val.__isDefault
+  }
+}
+
+const _ = () => new DefaultValue()
 
 function pattern(regex: RegExp) {
   return new AnyValue((val: any): val is string => typeof val === "string" && regex.test(val))
