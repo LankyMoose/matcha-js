@@ -1,5 +1,5 @@
 import { isObject, isConstructor, deepObjectEq, deepArrayEq } from "./util.js"
-import { AnyValue, DefaultValue } from "./value.js"
+import { Value } from "./value.js"
 
 export * from "./value.js"
 
@@ -53,11 +53,7 @@ function match<T>(value: T) {
           break
       }
 
-      if (AnyValue.isAnyValue(lhs)) {
-        if (lhs.match(value)) return matchSuccess(pattern, value)
-      } else if (DefaultValue.isDefaultValue(lhs)) {
-        return matchSuccess(pattern, value)
-      }
+      if (Value.match(lhs, value)) return matchSuccess(pattern, value)
 
       for (const classRef of [Error, Promise, Date]) {
         if (value instanceof classRef) {

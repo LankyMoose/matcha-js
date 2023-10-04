@@ -1,4 +1,4 @@
-import { AnyValue, DefaultValue } from "./value.js"
+import { Value } from "./value.js"
 
 export { isConstructor, isObject, deepObjectEq, deepArrayEq }
 
@@ -35,8 +35,7 @@ function deepObjectEq(objA: Obj, objB: Obj) {
     const a = objA[aKeys[i]]
     const b = objB[bKeys[i]]
 
-    if (AnyValue.isAnyValue(a) && a.match(b)) continue
-    if (DefaultValue.isDefaultValue(a)) continue
+    if (Value.match(a, b)) continue
     if (isObject(a) && isObject(b) && deepObjectEq(a, b)) continue
     if (Array.isArray(a) && Array.isArray(b) && deepArrayEq(a, b)) continue
     if (a !== b) return false
@@ -53,8 +52,7 @@ function deepArrayEq(arrA: Array<unknown>, arrB: Array<unknown>) {
     const a = arrA[i]
     const b = arrB[i]
 
-    if (AnyValue.isAnyValue(a) && a.match(b)) continue
-    if (DefaultValue.isDefaultValue(a)) continue
+    if (Value.match(a, b)) continue
     if (isObject(a) && isObject(b) && deepObjectEq(a, b)) continue
     if (Array.isArray(a) && Array.isArray(b) && deepArrayEq(a, b)) continue
     if (a !== b) return false

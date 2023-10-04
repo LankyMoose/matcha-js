@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert"
 
-import { match, any, _ } from "matcha-js"
+import { match, type, _ } from "matcha-js"
 
 test("primitive value", () => {
   const expected = 42
@@ -24,9 +24,9 @@ test("_", () => {
   assert.strictEqual(actual, expected)
 })
 
-test("any(class)", () => {
+test("type(class)", () => {
   const expected = 42
-  const actual = match(123)([any(Number), expected], [_, "nope"])
+  const actual = match(123)([type(Number), expected], [_, "nope"])
 
   assert.strictEqual(actual, expected)
 })
@@ -59,9 +59,12 @@ test("array", () => {
   assert.strictEqual(actual, expected)
 })
 
-test("array with any", () => {
+test("array with type", () => {
   const expected = 42
-  const actual = match([1, 2, 69])([[1, 2, any(Number)], expected], [_, "nope"])
+  const actual = match([1, 2, 69])(
+    [[1, 2, type(Number)], expected],
+    [_, "nope"]
+  )
 
   assert.strictEqual(actual, expected)
 })
@@ -76,7 +79,7 @@ test("array with _", () => {
 test("complex array", () => {
   const expected = 42
   const actual = match([1, "", [3, 4, {}]])(
-    [[_, any(String), [3, 4, {}]], expected],
+    [[_, type(String), [3, 4, {}]], expected],
     [_, "nope"]
   )
 
@@ -97,10 +100,10 @@ test("object", () => {
   assert.strictEqual(actual, expected)
 })
 
-test("object with any", () => {
+test("object with type", () => {
   const expected = 42
   const actual = match({ x: 1, y: 69 })(
-    [{ x: 1, y: any(Number) }, expected],
+    [{ x: 1, y: type(Number) }, expected],
     [_, "nope"]
   )
 
@@ -117,7 +120,7 @@ test("object with _", () => {
 test("complex object", () => {
   const expected = 42
   const actual = match({ x: "", y: { z: 2 } })(
-    [{ x: any(String), y: { z: _ } }, expected],
+    [{ x: type(String), y: { z: _ } }, expected],
     [_, "nope"]
   )
 

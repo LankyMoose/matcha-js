@@ -1,13 +1,21 @@
 import { isObject } from "./util.js";
-export { any, AnyValue, _, DefaultValue };
+export { type, optional, nullable, Value, _ };
+class Value {
+    static match(lhs, val) {
+        if (AnyValue.isAnyValue(lhs))
+            return true;
+        if (TypedValue.isTypedValue(lhs) && lhs.match(val))
+            return true;
+        if (OptionalValue.isOptionalValue(lhs) && lhs.match(val))
+            return true;
+        if (NullableValue.isNullableValue(lhs) && lhs.match(val))
+            return true;
+        return false;
+    }
+}
 class AnyValue {
-    constructor(match) {
-        Object.defineProperty(this, "match", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: match
-        });
+    constructor() {
+        // @ts-expect-error
         Object.defineProperty(this, "__isAny", {
             enumerable: true,
             configurable: true,
@@ -19,43 +27,116 @@ class AnyValue {
         return typeof val === "object" && "__isAny" in val;
     }
 }
-class DefaultValue {
-    constructor() {
-        Object.defineProperty(this, "__isDefault", {
+const _ = new AnyValue();
+class TypedValue {
+    constructor(classRef) {
+        Object.defineProperty(this, "classRef", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: classRef
+        });
+        // @ts-expect-error
+        Object.defineProperty(this, "__isOfType", {
             enumerable: true,
             configurable: true,
             writable: true,
             value: true
         });
     }
-    static isDefaultValue(val) {
-        return typeof val === "object" && "__isDefault" in val;
+    static isTypedValue(val) {
+        return typeof val === "object" && "__isOfType" in val;
+    }
+    match(val) {
+        return matchType(this.classRef, val);
     }
 }
-const _ = new DefaultValue();
-function any(classRef) {
-    switch (classRef) {
+class OptionalValue {
+    constructor(classRef) {
+        Object.defineProperty(this, "classRef", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: classRef
+        });
+        // @ts-expect-error
+        Object.defineProperty(this, "__isOptional", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: true
+        });
+    }
+    static isOptionalValue(val) {
+        return typeof val === "object" && "__isOptional" in val;
+    }
+    match(val) {
+        if (val === undefined)
+            return true;
+        if (val === null)
+            return false; // null is not optional
+        return matchType(this.classRef, val);
+    }
+}
+class NullableValue {
+    constructor(classRef) {
+        Object.defineProperty(this, "classRef", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: classRef
+        });
+        // @ts-expect-error
+        Object.defineProperty(this, "__isNullable", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: true
+        });
+    }
+    static isNullableValue(val) {
+        return typeof val === "object" && "__isNullable" in val;
+    }
+    match(val) {
+        if (val === null)
+            return true;
+        if (val === undefined)
+            return false; // undefined is not nullable
+        return matchType(this.classRef, val);
+    }
+}
+function optional(classRef) {
+    return new OptionalValue(classRef);
+}
+function type(classRef) {
+    return new TypedValue(classRef);
+}
+function nullable(classRef) {
+    return new NullableValue(classRef);
+}
+function matchType(targetClass, val) {
+    switch (targetClass) {
         case String:
-            return new AnyValue((val) => typeof val === "string");
+            return typeof val === "string";
         case Number:
-            return new AnyValue((val) => typeof val === "number");
+            return typeof val === "number";
         case Boolean:
-            return new AnyValue((val) => typeof val === "boolean");
+            return typeof val === "boolean";
         case BigInt:
-            return new AnyValue((val) => typeof val === "bigint");
+            return typeof val === "bigint";
         case Symbol:
-            return new AnyValue((val) => typeof val === "symbol");
+            return typeof val === "symbol";
         case Array:
-            return new AnyValue((val) => Array.isArray(val));
+            return Array.isArray(val);
         case Object:
-            return new AnyValue((val) => isObject(val));
+            return isObject(val);
         case Error:
-            return new AnyValue((val) => val instanceof Error);
+            return val instanceof Error;
         case Promise:
-            return new AnyValue((val) => val instanceof Promise);
+            return val instanceof Promise;
         case Date:
-            return new AnyValue((val) => val instanceof Date);
+            return val instanceof Date;
         default:
-            return new AnyValue((val) => val instanceof classRef);
+            return val instanceof targetClass;
     }
 }
