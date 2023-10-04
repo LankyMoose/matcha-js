@@ -8,7 +8,7 @@ class AnyValue<T> {
   __isAny = true
   constructor(public match: { (val: any): val is T }) {}
   static isAnyValue(val: any): val is AnyValue<any> {
-    return typeof val === "object" && val.__isAny
+    return typeof val === "object" && "__isAny" in val
   }
 }
 
@@ -16,11 +16,11 @@ class DefaultValue {
   __isDefault = true
   constructor() {}
   static isDefaultValue(val: any): val is DefaultValue {
-    return typeof val === "object" && val.__isDefault
+    return typeof val === "object" && "__isDefault" in val
   }
 }
 
-const _ = () => new DefaultValue()
+const _ = new DefaultValue()
 
 function pattern(regex: RegExp) {
   return new AnyValue(

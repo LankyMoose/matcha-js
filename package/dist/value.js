@@ -16,7 +16,7 @@ class AnyValue {
         });
     }
     static isAnyValue(val) {
-        return typeof val === "object" && val.__isAny;
+        return typeof val === "object" && "__isAny" in val;
     }
 }
 class DefaultValue {
@@ -29,10 +29,10 @@ class DefaultValue {
         });
     }
     static isDefaultValue(val) {
-        return typeof val === "object" && val.__isDefault;
+        return typeof val === "object" && "__isDefault" in val;
     }
 }
-const _ = () => new DefaultValue();
+const _ = new DefaultValue();
 function pattern(regex) {
     return new AnyValue((val) => typeof val === "string" && regex.test(val));
 }

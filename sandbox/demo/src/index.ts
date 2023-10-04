@@ -12,16 +12,16 @@ match("Hello")(
   [_, () => console.log("value is not a string of letters or numbers")]
 )
 
-// match([1, 2, 3])(
-//   [[], () => console.log("value is an empty array")],
-//   [[1, 2, 3], () => console.log("value is an array of 1, 2, and 3")],
-//   [_, () => console.log("no match")]
-// )
+match([1, 2, 3])(
+  [[], () => console.log("value is an empty array")],
+  [[1, 2, 3], () => console.log("value is an array of 1, 2, and 3")],
+  [_, () => console.log("no match")]
+)
 
-// const returnVal = match(123)(
-//   [Number, 456],
-//   [String, "Hello World"],
-//   [Boolean, true]
-// )
+const returnVal = match(123)(
+  [Number, 456],
+  [String, "Hello World"],
+  [Boolean, true]
+)
 
-// console.log("returnVal: ", returnVal)
+console.log("returnVal: ", returnVal)

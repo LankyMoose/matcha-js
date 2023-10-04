@@ -15,7 +15,7 @@ declare class DefaultValue {
     constructor();
     static isDefaultValue(val: any): val is DefaultValue;
 }
-declare const _: () => DefaultValue;
+declare const _: DefaultValue;
 declare function pattern(regex: RegExp): AnyValue<string>;
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor | BigIntConstructor | SymbolConstructor | ArrayConstructor | ObjectConstructor | ErrorConstructor | PromiseConstructor | DateConstructor;
 declare function any<T>(classRef: PrimitiveConstructor | ConstructorType<T>): AnyValue<number> | AnyValue<bigint> | AnyValue<Object> | AnyValue<Date> | AnyValue<T>;

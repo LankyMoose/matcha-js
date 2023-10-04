@@ -1,4 +1,4 @@
-import { isObject, isConstructor } from "./util.js";
+import { isObject, isConstructor, deepObjectEq, deepArrayEq } from "./util.js";
 import { AnyValue, DefaultValue } from "./value.js";
 export * from "./value.js";
 export { match };
@@ -58,35 +58,27 @@ function match(value) {
             }
             if (Array.isArray(value)) {
                 if (lhs === Array) {
-                    return pattern[1]();
+                    return matchSuccess(pattern, value);
                 }
                 else if (Array.isArray(lhs)) {
-                    if (lhs.length === value.length &&
-                        lhs.every((p, i) => p === value[i] || (p instanceof AnyValue && p.match(value[i])))) {
+                    if (deepArrayEq(lhs, value))
                         return matchSuccess(pattern, value);
-                    }
                 }
                 else {
                     continue;
                 }
             }
             if (isObject(value)) {
-                if (isConstructor(lhs)) {
+                if (lhs === Object) {
+                    return matchSuccess(pattern, value);
+                }
+                else if (isConstructor(lhs)) {
                     if (value instanceof lhs)
                         return matchSuccess(pattern, value);
                 }
-                if (lhs === Object) {
-                    return pattern[1]();
-                }
                 else if (isObject(lhs)) {
-                    const aKeys = Object.keys(value);
-                    const bKeys = Object.keys(lhs);
-                    if (aKeys.length === bKeys.length &&
-                        aKeys.every((p) => lhs[p] === value[p] ||
-                            (lhs[p] instanceof AnyValue &&
-                                lhs[p].match(value[p])))) {
+                    if (deepObjectEq(lhs, value))
                         return matchSuccess(pattern, value);
-                    }
                 }
                 else {
                     continue;
