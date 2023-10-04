@@ -1,4 +1,4 @@
-import { match, any, _ } from "patternmatcher"
+import { match, any, _ } from "matcha-js"
 
 const point = { x: 123, y: 123 }
 match(point)(

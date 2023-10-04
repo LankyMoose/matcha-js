@@ -7,7 +7,7 @@
 Usage:
 
 ```js
-import { match, _ } from "patternmatcher"
+import { match, _ } from "matcha-js"
 
 const x = 1
 
@@ -31,7 +31,7 @@ console.log(y) // "something else"
 Objects:
 
 ```js
-import { match, any } from "patternmatcher"
+import { match, any } from "matcha-js"
 
 const point = { x: 1, y: 2 }
 
@@ -45,7 +45,7 @@ match(point)(
 Classes:
 
 ```js
-import { match } from "patternmatcher"
+import { match } from "matcha-js"
 
 const value = "Hello World"
 
@@ -58,7 +58,7 @@ match(value)(
 Patterns:
 
 ```js
-import { match } from "patternmatcher"
+import { match } from "matcha-js"
 
 const value = "Supercalifragilisticexpialidocious"
 
