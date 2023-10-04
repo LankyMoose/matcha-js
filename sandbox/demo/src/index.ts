@@ -30,6 +30,8 @@ import { match, type, _, optional, nullable } from "matcha-js"
 // console.log("returnVal: ", returnVal)
 
 match({ a: 123, b: null })([
-  { a: type(Array, Number), b: nullable(String) },
+  { a: type(Array, Number), b: nullable(Number) },
   () => console.log("matched"),
 ])
+
+match("Test")([type(String), () => console.log("matched")])

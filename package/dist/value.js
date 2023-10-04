@@ -30,6 +30,12 @@ class AnyValue {
 const _ = new AnyValue();
 class TypedValue {
     constructor(...classRefs) {
+        Object.defineProperty(this, "classRefs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         // @ts-expect-error
         Object.defineProperty(this, "__isOfType", {
             enumerable: true,
@@ -37,35 +43,31 @@ class TypedValue {
             writable: true,
             value: true
         });
-        Object.defineProperty(this, "classRefs", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.classRefs = classRefs;
     }
     static isTypedValue(val) {
         return typeof val === "object" && "__isOfType" in val;
     }
     match(val) {
-        return matchTypes(val, ...this.classRefs);
+        const res = matchTypes(val, this.classRefs);
+        console.log("typedValue match", res);
+        return res;
     }
 }
 class OptionalValue {
     constructor(...classRefs) {
+        Object.defineProperty(this, "classRefs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         // @ts-expect-error
         Object.defineProperty(this, "__isOptional", {
             enumerable: true,
             configurable: true,
             writable: true,
             value: true
-        });
-        Object.defineProperty(this, "classRefs", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
         });
         this.classRefs = classRefs;
     }
@@ -77,23 +79,23 @@ class OptionalValue {
             return true;
         if (val === null)
             return false; // null is not optional
-        return matchTypes(val, ...this.classRefs);
+        return matchTypes(val, this.classRefs);
     }
 }
 class NullableValue {
     constructor(...classRefs) {
+        Object.defineProperty(this, "classRefs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         // @ts-expect-error
         Object.defineProperty(this, "__isNullable", {
             enumerable: true,
             configurable: true,
             writable: true,
             value: true
-        });
-        Object.defineProperty(this, "classRefs", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
         });
         this.classRefs = classRefs;
     }
@@ -105,7 +107,7 @@ class NullableValue {
             return true;
         if (val === undefined)
             return false; // undefined is not nullable
-        return matchTypes(val, ...this.classRefs);
+        return matchTypes(val, this.classRefs);
     }
 }
 function optional(...classRefs) {
@@ -117,8 +119,12 @@ function type(...classRefs) {
 function nullable(...classRefs) {
     return new NullableValue(...classRefs);
 }
-function matchTypes(val, ...classRefs) {
-    return classRefs.some((classRef) => matchType(val, classRef));
+function matchTypes(val, classRefs) {
+    for (const classRef of classRefs) {
+        if (matchType(val, classRef))
+            return true;
+    }
+    return false;
 }
 function matchType(val, classRef) {
     switch (classRef) {

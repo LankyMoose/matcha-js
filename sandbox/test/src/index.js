@@ -126,3 +126,10 @@ test("complex object", () => {
 
   assert.strictEqual(actual, expected)
 })
+
+test("multi-type match", () => {
+  const expected = 42
+  const actual = match(42)([type(String, Number), expected], [_, "nope"])
+
+  assert.strictEqual(actual, expected)
+})

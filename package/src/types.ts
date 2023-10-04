@@ -1,6 +1,8 @@
-type Constructor<T> = new (...args: any[]) => T
+export type Constructor<T> = new (...args: any[]) => T
 
-type PrimitiveConstructor =
+export type ClassRef<T> = PrimitiveConstructor | Constructor<T>
+
+export type PrimitiveConstructor =
   | StringConstructor
   | NumberConstructor
   | BooleanConstructor
