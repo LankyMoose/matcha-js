@@ -1,12 +1,12 @@
 {
-  "name": "patternblaze",
+  "name": "matcha-js",
   "version": "1.0.0",
   "description": "A simple pattern matcher for javascript with zero dependancies",
   "main": "dist/index.js",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Robby6Strings/patternmatcher-js"
+    "url": "https://github.com/Robby6Strings/matcha-js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

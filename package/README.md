@@ -58,12 +58,12 @@ match(value)(
 Patterns:
 
 ```js
-import { match, pattern } from "patternmatcher"
+import { match } from "patternmatcher"
 
 const value = "Supercalifragilisticexpialidocious"
 
 match(value)(
-  [pattern(/^[a-zA-Z]+$/), () => console.log("value is a string of letters")],
-  [pattern(/^[0-9]+$/), () => console.log("value is a string of numbers")]
+  [/^[a-zA-Z]+$/, () => console.log("value is a string of letters")],
+  [/^[0-9]+$/, () => console.log("value is a string of numbers")]
 )
 ```

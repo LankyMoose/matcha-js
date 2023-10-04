@@ -23,7 +23,9 @@ class DefaultValue {
 const _ = () => new DefaultValue()
 
 function pattern(regex: RegExp) {
-  return new AnyValue((val: any): val is string => typeof val === "string" && regex.test(val))
+  return new AnyValue(
+    (val: any): val is string => typeof val === "string" && regex.test(val)
+  )
 }
 
 type PrimitiveConstructor =
@@ -45,7 +47,9 @@ function any<T>(classRef: PrimitiveConstructor | ConstructorType<T>) {
     case Number:
       return new AnyValue((val: any): val is number => typeof val === "number")
     case Boolean:
-      return new AnyValue((val: any): val is boolean => typeof val === "boolean")
+      return new AnyValue(
+        (val: any): val is boolean => typeof val === "boolean"
+      )
     case BigInt:
       return new AnyValue((val: any): val is bigint => typeof val === "bigint")
     case Symbol:
@@ -57,7 +61,9 @@ function any<T>(classRef: PrimitiveConstructor | ConstructorType<T>) {
     case Error:
       return new AnyValue((val: any): val is Error => val instanceof Error)
     case Promise:
-      return new AnyValue((val: any): val is Promise<any> => val instanceof Promise)
+      return new AnyValue(
+        (val: any): val is Promise<any> => val instanceof Promise
+      )
     case Date:
       return new AnyValue((val: any): val is Date => val instanceof Date)
     default:
