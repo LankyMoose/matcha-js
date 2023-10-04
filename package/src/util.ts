@@ -10,7 +10,9 @@ function isConstructor(value: any): value is new (...args: any[]) => any {
   )
 }
 
-function isObject(value: any): value is Object {
+type Obj = Record<string | symbol | number, unknown>
+
+function isObject(value: any): value is Obj {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -19,19 +21,19 @@ function isObject(value: any): value is Object {
   )
 }
 
-function deepObjectEq(objA: Object, objB: Object) {
+function deepObjectEq(objA: Obj, objB: Obj) {
   const aKeys = Object.keys(objA).sort()
   const bKeys = Object.keys(objB).sort()
+
   if (aKeys.length !== bKeys.length) {
-    console.log("lengths not equal")
     return false
   }
 
   for (let i = 0; i < aKeys.length; i++) {
     if (aKeys[i] !== bKeys[i]) return false
 
-    const a = objA[aKeys[i] as keyof typeof objA]
-    const b = objB[bKeys[i] as keyof typeof objB]
+    const a = objA[aKeys[i]]
+    const b = objB[bKeys[i]]
 
     if (AnyValue.isAnyValue(a) && a.match(b)) continue
     if (DefaultValue.isDefaultValue(a)) continue
@@ -44,7 +46,6 @@ function deepObjectEq(objA: Object, objB: Object) {
 
 function deepArrayEq(arrA: Array<unknown>, arrB: Array<unknown>) {
   if (arrA.length !== arrB.length) {
-    console.log("lengths not equal")
     return false
   }
 
