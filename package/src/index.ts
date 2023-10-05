@@ -1,10 +1,4 @@
-import {
-  Value,
-  isObject,
-  isConstructor,
-  deepObjectEq,
-  deepArrayEq,
-} from "./value.js"
+import { Value, isObject, isConstructor, deepObjectEq, deepArrayEq } from "./value.js"
 
 export * from "./value.js"
 
@@ -19,9 +13,7 @@ function matchSuccess<T>(pattern: Pattern<T>, value: T) {
 function match<T>(value: T) {
   return <P extends Pattern<T>[]>(
     ...patterns: P
-  ): P[number][1] extends Function
-    ? ReturnType<P[number][1]>
-    : P[number][1] => {
+  ): P[number][1] extends Function ? ReturnType<P[number][1]> : P[number][1] => {
     for (const pattern of patterns) {
       const [lhs] = pattern
 

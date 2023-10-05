@@ -170,10 +170,10 @@ function isObject(value: any): value is Obj {
 }
 
 function deepObjectEq(pattern: Obj, value: Obj) {
+  let optionalCount = 0
+
   const pKeys = Object.keys(pattern).sort()
   const vKeys = Object.keys(value).sort()
-
-  let optionalCount = 0
 
   for (let i = 0; i < pKeys.length; i++) {
     const pVal = pattern[pKeys[i]]
@@ -188,9 +188,15 @@ function deepObjectEq(pattern: Obj, value: Obj) {
     }
 
     if (Value.match(pVal, vVal)) continue
-    if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) continue
-    if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(pVal, vVal))
+
+    if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) {
       continue
+    }
+
+    if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(pVal, vVal)) {
+      continue
+    }
+
     if (pVal !== vVal) return false
   }
 
@@ -214,18 +220,21 @@ function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
       }
       continue
     }
-    if (isObject(pItem) && isObject(vItem) && deepObjectEq(pItem, vItem))
+
+    if (isObject(pItem) && isObject(vItem) && deepObjectEq(pItem, vItem)) {
       continue
-    if (
-      Array.isArray(pItem) &&
-      Array.isArray(vItem) &&
-      deepArrayEq(pItem, vItem)
-    )
+    }
+
+    if (Array.isArray(pItem) && Array.isArray(vItem) && deepArrayEq(pItem, vItem)) {
       continue
+    }
+
     if (pItem !== vItem) return false
   }
+
   if (pattern.length - optionalCount !== value.length) {
     return false
   }
+
   return true
 }
