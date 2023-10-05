@@ -28,7 +28,6 @@ class Value {
   }
 
   [Symbol.iterator](): Iterator<Value> {
-    console.log("iterator")
     let i = 0
     return {
       next: () => {
@@ -56,9 +55,8 @@ class AnyValue extends Value {
     return val.toString() === "[object MatchaAny]"
   }
   static isPartialObject(val: any): boolean {
-    return (
-      val && typeof val === "object" && anySymbol in val && val[anySymbol] === anySymbol
-    )
+    // check if the object has the anySymbol property
+    return anySymbol in val
   }
 }
 
@@ -183,14 +181,21 @@ function isObject(value: any): value is Obj {
 function deepObjectEq(pattern: Obj, value: Obj) {
   let optionalCount = 0
 
+  const isPartial = AnyValue.isPartialObject(pattern)
+
   const pKeys = Object.keys(pattern).sort()
   const vKeys = Object.keys(value).sort()
 
   for (let i = 0; i < pKeys.length; i++) {
-    if (pKeys[i] && vKeys[i] && pKeys[i] !== vKeys[i]) return false
+    if (!isPartial) {
+      // ensure key match
+      if (pKeys[i] && vKeys[i] && pKeys[i] !== vKeys[i]) {
+        return false
+      }
+    }
 
-    const pVal = pattern[pKeys[i]]
     const vVal = value[vKeys[i]]
+    const pVal = isPartial ? pattern[vKeys[i]] : pattern[pKeys[i]]
 
     if (vKeys[i] === undefined) {
       if (OptionalValue.isOptionalValue(pVal)) {
@@ -198,22 +203,28 @@ function deepObjectEq(pattern: Obj, value: Obj) {
       } else {
         return false
       }
+    } else if (isPartial && !pKeys.includes(vKeys[i])) {
+      continue
     }
 
     if (Value.isValue(pVal) && Value.match(pVal, vVal)) continue
 
-    if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) {
+    if (isObject(pVal) && isObject(vVal)) {
+      if (!deepObjectEq(pVal, vVal)) return false
       continue
     }
 
-    if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(pVal, vVal)) {
+    if (Array.isArray(pVal) && Array.isArray(vVal)) {
+      if (!deepArrayEq(pVal, vVal)) return false
       continue
     }
 
-    if (pVal !== vVal) return false
+    if (pVal !== vVal) {
+      return false
+    }
   }
 
-  if (pKeys.length - optionalCount !== vKeys.length) {
+  if (!isPartial && pKeys.length - optionalCount !== vKeys.length) {
     return false
   }
 

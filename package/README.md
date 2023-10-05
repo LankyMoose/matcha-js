@@ -41,6 +41,12 @@ match(point)(
   [{ x: type(Number), y: 2 }, () => console.log("point is (a number), 2")]
 )
 // "point is 1, (a number)"
+
+match({ x: 1, y: { z: 2, a: "test" } })([
+  { x: 1, y: { z: type(Number), ..._ } },
+  () => console.log("point is {x: 1, y: { z: (a number), ..._ }}"),
+])
+// "point is {x: 1, y: { z: (a number), ..._ }}"
 ```
 
 Arrays:

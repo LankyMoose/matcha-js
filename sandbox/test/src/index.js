@@ -244,3 +244,13 @@ test("partial object", () => {
 
   assert.strictEqual(actual, expected)
 })
+
+test("nested partial object", () => {
+  const expected = 42
+  const actual = match({ x: 1, y: { z: 2, a: "test" } })(
+    [{ x: 1, y: { z: type(Number), ..._ } }, expected],
+    [_, "nope"]
+  )
+
+  assert.strictEqual(actual, expected)
+})
