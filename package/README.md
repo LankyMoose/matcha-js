@@ -56,7 +56,24 @@ match(value)(
   [[], () => console.log("value is an empty array")]
 )
 // "value is [1, 2, 3]"
+
+match([1, 2, 3, 4, 5, "Test"])(
+  [[...type(Number), type(String)], () => console.log("value is [...(a number), (a string)]")],
+  [_, () => console.log("no match")]
+)
+// "value is [...(a number), (a string)]"
+
+match([1, 2, 3, 4, 5, "Test", {}, []])(
+  [
+    [...type(Number), type(String), ..._],
+    () => console.log("value is [...(a number), (a string), ..._]"),
+  ],
+  [_, () => console.log("no match")]
+)
+// "value is [...(a number), (a string), ..._]"
 ```
+
+````
 
 Classes:
 
@@ -70,7 +87,7 @@ match(value)(
   [Number, () => console.log("value is a number")]
 )
 // "value is a string"
-```
+````
 
 Regex:
 

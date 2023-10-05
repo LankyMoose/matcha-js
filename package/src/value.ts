@@ -1,28 +1,25 @@
-import { ClassRef, PrimitiveConstructor, Obj } from "./types.js"
+import { ClassRef, Constructor, Obj } from "./types.js"
 
-export {
-  type,
-  optional,
-  nullable,
-  Value,
-  _,
-  isObject,
-  isConstructor,
-  deepObjectEq,
-  deepArrayEq,
-}
+export { type, optional, nullable, Value, _, omniMatch }
 
 class Value {
-  // @ts-expect-error
-  private isSpread: boolean = false
+  isSpread: boolean = false
 
-  static match<T>(lhs: any, val: T) {
-    if (typeof lhs !== "object") return false
+  static isValue(val: any): val is Value {
+    if (typeof val !== "object") return false
+    return (
+      AnyValue.isAnyValue(val) ||
+      TypedValue.isTypedValue(val) ||
+      OptionalValue.isOptionalValue(val) ||
+      NullableValue.isNullableValue(val)
+    )
+  }
 
-    if (AnyValue.isAnyValue(lhs)) return true
-    if (TypedValue.isTypedValue(lhs)) return lhs.match(val)
-    if (OptionalValue.isOptionalValue(lhs)) return lhs.match(val)
-    if (NullableValue.isNullableValue(lhs)) return lhs.match(val)
+  static match<T>(value: Value, val: T) {
+    if (AnyValue.isAnyValue(value)) return true
+    if (TypedValue.isTypedValue(value)) return value.match(val)
+    if (OptionalValue.isOptionalValue(value)) return value.match(val)
+    if (NullableValue.isNullableValue(value)) return value.match(val)
 
     return false
   }
@@ -125,7 +122,7 @@ function matchTypes<T>(val: any, classRefs: ClassRef<T>[]) {
   return classRefs.some((classRef) => matchType(val, classRef))
 }
 
-function matchType<T>(val: any, classRef: ClassRef<T> | PrimitiveConstructor) {
+function matchType<T>(val: any, classRef: ClassRef<T>) {
   switch (classRef) {
     case String:
       return typeof val === "string"
@@ -152,7 +149,7 @@ function matchType<T>(val: any, classRef: ClassRef<T> | PrimitiveConstructor) {
   }
 }
 
-function isConstructor(value: any): value is new (...args: any[]) => any {
+function isConstructor(value: any): value is Constructor<unknown> {
   return (
     typeof value === "function" &&
     value.prototype &&
@@ -176,6 +173,8 @@ function deepObjectEq(pattern: Obj, value: Obj) {
   const vKeys = Object.keys(value).sort()
 
   for (let i = 0; i < pKeys.length; i++) {
+    if (pKeys[i] && vKeys[i] && pKeys[i] !== vKeys[i]) return false
+
     const pVal = pattern[pKeys[i]]
     const vVal = value[vKeys[i]]
 
@@ -187,7 +186,7 @@ function deepObjectEq(pattern: Obj, value: Obj) {
       }
     }
 
-    if (Value.match(pVal, vVal)) continue
+    if (Value.isValue(pVal) && Value.match(pVal, vVal)) continue
 
     if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) {
       continue
@@ -208,33 +207,189 @@ function deepObjectEq(pattern: Obj, value: Obj) {
 }
 
 function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
-  let optionalCount = 0
+  let pi = 0
+  let vi = 0
 
-  for (let i = 0; i < pattern.length; i++) {
-    const pItem = pattern[i]
-    const vItem = value[i]
+  while (pi < pattern.length || vi < value.length) {
+    const pItem = pattern[pi]
+    const vItem = value[vi]
 
-    if (Value.match(pItem, vItem)) {
-      if (OptionalValue.isOptionalValue(pItem)) {
-        optionalCount++
+    if (Value.isValue(pItem)) {
+      const nextPatternItem = pattern[pi + 1]
+      if (Value.match(pItem, vItem)) {
+        if (pItem.isSpread) {
+          vi++
+
+          // if the next pattern item is not a spread and would match with this value item
+          // then we need to end this spread
+          //eg:
+          // val = ["start", "started", "going", "ending", "ended"]
+          // pattern = ["start", ...type(String), "going", ...type(String)]
+
+          if (Value.isValue(nextPatternItem) && nextPatternItem.isSpread) {
+          } else {
+            if (omniMatch(vItem, nextPatternItem)) {
+              pi++
+              vi--
+            }
+          }
+
+          continue
+        }
+        pi++
+        vi++
+        continue
       }
+
+      if (!omniMatch(vItem, nextPatternItem)) {
+        return false
+      }
+
+      pi++
+      if (pi > value.length) return false
+      if (pi > pattern.length) return false
       continue
     }
 
-    if (isObject(pItem) && isObject(vItem) && deepObjectEq(pItem, vItem)) {
+    if (isObject(pItem) && isObject(vItem)) {
+      if (!deepObjectEq(pItem, vItem)) return false
+      pi++
+      vi++
       continue
     }
 
     if (Array.isArray(pItem) && Array.isArray(vItem) && deepArrayEq(pItem, vItem)) {
+      pi++
+      vi++
       continue
     }
 
-    if (pItem !== vItem) return false
-  }
+    if (pItem === vItem) {
+      pi++
+      vi++
+      continue
+    } else {
+      // handle cases where:
+      // value = ["start", "middle", "end", "the very end"]
+      // pattern = [...type(String), "end", "the very end"]
+      // or:
+      // value = ["start", "middle", "end", "the very end", "just kidding"]
+      // pattern = ["start", ...type(String), "end", "the very end"]
 
-  if (pattern.length - optionalCount !== value.length) {
-    return false
+      const pItemDistToEnd = pattern.length - pi
+      let vIdx = value.length - pItemDistToEnd
+
+      const vItem = value[vIdx]
+
+      if (vItem === pItem) {
+        pi++
+        vi++
+        continue
+      }
+
+      if (primitiveMatch(vItem, pItem)) {
+        pi++
+        vi++
+        continue
+      }
+
+      if (Array.isArray(pItem) && Array.isArray(vItem) && deepArrayEq(pItem, vItem)) {
+        pi++
+        vi++
+        continue
+      }
+
+      if (Value.isValue(pItem) && Value.match(pItem, vItem)) {
+        pi++
+        vi++
+        continue
+      }
+
+      if (isObject(pItem) && isObject(vItem) && deepObjectEq(pItem, vItem)) {
+        pi++
+        vi++
+        continue
+      }
+
+      return false
+    }
   }
 
   return true
+}
+
+function omniMatch(value: unknown, pattern: unknown) {
+  if (value === pattern) return true
+
+  if (primitiveMatch(value, pattern)) return true
+
+  if (arrayMatch(value, pattern)) return true
+
+  if (Value.isValue(pattern) && Value.match(pattern, value)) return true
+
+  if (objectMatch(value, pattern)) return true
+
+  return false
+}
+
+function arrayMatch(value: unknown, pattern: unknown) {
+  if (!Array.isArray(value)) return false
+
+  if (pattern === Array) return true
+
+  if (Array.isArray(pattern) && deepArrayEq(pattern, value)) return true
+
+  return false
+}
+
+function primitiveMatch(value: unknown, pattern: unknown) {
+  switch (typeof value) {
+    case "string":
+      if (
+        pattern === String ||
+        (typeof pattern === "string" && pattern === value) ||
+        (pattern instanceof RegExp && pattern.test(value))
+      )
+        return true
+      break
+    case "number":
+      if (pattern === Number || (typeof pattern === "number" && pattern === value))
+        return true
+      break
+    case "boolean":
+      if (pattern === Boolean || (typeof pattern === "boolean" && pattern === value))
+        return true
+      break
+    case "bigint":
+      if (pattern === BigInt || (typeof pattern === "bigint" && pattern === value))
+        return true
+      break
+    case "symbol":
+      if (pattern === Symbol || (typeof pattern === "symbol" && pattern === value))
+        return true
+      break
+    case "function":
+      if (pattern === Function || (typeof pattern === "function" && pattern === value))
+        return true
+      break
+    default:
+      break
+  }
+  return false
+}
+
+// function instanceMatch(value: unknown, classRefs: Constructor<unknown>[]) {
+//   return classRefs.some((classRef) => value instanceof classRef)
+// }
+
+function objectMatch(value: unknown, pattern: unknown) {
+  if (!isObject(value)) return false
+
+  if (pattern === Object) return true
+
+  if (isConstructor(pattern) && value instanceof pattern) return true
+
+  if (isObject(pattern) && deepObjectEq(pattern, value)) return true
+
+  return false
 }

@@ -184,3 +184,53 @@ test("optional array value", () => {
 
   assert.strictEqual(actual, expected)
 })
+
+test("spread array (at start)", () => {
+  const expected = 42
+  const actual = match([1, 2, 3, "test"])(
+    [[...type(Number), "test"], expected],
+    [_, "nope"]
+  )
+
+  assert.strictEqual(actual, expected)
+})
+
+test("spread array (at end)", () => {
+  const expected = 42
+  const actual = match(["test", 1, 2, 3])(
+    [["test", ...type(Number)], expected],
+    [_, "nope"]
+  )
+
+  assert.strictEqual(actual, expected)
+})
+
+test("spread array (in middle)", () => {
+  const expected = 42
+  const actual = match(["start", 1, 2, 3, "end"])(
+    [["start", ...type(Number), "end"], expected],
+    [_, "nope"]
+  )
+
+  assert.strictEqual(actual, expected)
+})
+
+test("multiple spread arrays", () => {
+  const expected = 42
+  const actual = match(["start", 1, 2, 3, "bingo", "bongo", "bango", "bunga"])(
+    [["start", ...type(Number), "bingo", ...type(String), "bunga"], expected],
+    [_, "nope"]
+  )
+
+  assert.strictEqual(actual, expected)
+})
+
+test("spreads on meth", () => {
+  const expected = 42
+  const actual = match([1, 2, 3, 4, 5, "Test", 1, {}])(
+    [[...type(Number), type(String), ..._], expected],
+    [_, () => console.log("no match")]
+  )
+
+  assert.strictEqual(actual, expected)
+})

@@ -1,8 +1,9 @@
-import { ClassRef, Obj } from "./types.js";
-export { type, optional, nullable, Value, _, isObject, isConstructor, deepObjectEq, deepArrayEq, };
+import { ClassRef } from "./types.js";
+export { type, optional, nullable, Value, _, omniMatch };
 declare class Value {
-    private isSpread;
-    static match<T>(lhs: any, val: T): boolean;
+    isSpread: boolean;
+    static isValue(val: any): val is Value;
+    static match<T>(value: Value, val: T): boolean;
     [Symbol.iterator](): Iterator<Value>;
 }
 declare class AnyValue extends Value {
@@ -34,7 +35,4 @@ declare class NullableValue<T = void> extends Value {
 declare function optional<T>(...classRefs: ClassRef<T>[]): OptionalValue<T>;
 declare function type<T>(...classRefs: ClassRef<T>[]): TypedValue<T>;
 declare function nullable<T>(...classRefs: ClassRef<T>[]): NullableValue<T>;
-declare function isConstructor(value: any): value is new (...args: any[]) => any;
-declare function isObject(value: any): value is Obj;
-declare function deepObjectEq(pattern: Obj, value: Obj): boolean;
-declare function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>): boolean;
+declare function omniMatch(value: unknown, pattern: unknown): boolean;

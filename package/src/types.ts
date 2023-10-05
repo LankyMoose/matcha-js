@@ -15,3 +15,4 @@ export type PrimitiveConstructor =
   | DateConstructor
 
 export type Obj = Record<string | symbol | number, unknown>
+export type MatchItem<T> = [any, ((val: T) => any) | any]
