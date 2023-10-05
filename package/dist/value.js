@@ -1,6 +1,8 @@
 export { type, optional, nullable, Value, _, isObject, isConstructor, deepObjectEq, deepArrayEq, };
 class Value {
     static match(lhs, val) {
+        if (typeof lhs !== "object")
+            return false;
         if (AnyValue.isAnyValue(lhs))
             return true;
         if (TypedValue.isTypedValue(lhs) && lhs.match(val))
@@ -13,17 +15,11 @@ class Value {
     }
 }
 class AnyValue {
-    constructor() {
-        // @ts-expect-error
-        Object.defineProperty(this, "__isAny", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: true
-        });
+    get [Symbol.toStringTag]() {
+        return "MatchaAny";
     }
     static isAnyValue(val) {
-        return typeof val === "object" && "__isAny" in val;
+        return val.toString() === "[object MatchaAny]";
     }
 }
 const _ = new AnyValue();
@@ -35,17 +31,13 @@ class TypedValue {
             writable: true,
             value: void 0
         });
-        // @ts-expect-error
-        Object.defineProperty(this, "__isOfType", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: true
-        });
         this.classRefs = classRefs;
     }
+    get [Symbol.toStringTag]() {
+        return "MatchaTyped";
+    }
     static isTypedValue(val) {
-        return typeof val === "object" && "__isOfType" in val;
+        return val.toString() === "[object MatchaTyped]";
     }
     match(val) {
         return matchTypes(val, this.classRefs);
@@ -59,17 +51,13 @@ class OptionalValue {
             writable: true,
             value: void 0
         });
-        // @ts-expect-error
-        Object.defineProperty(this, "__isOptional", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: true
-        });
         this.classRefs = classRefs;
     }
+    get [Symbol.toStringTag]() {
+        return "MatchaOptional";
+    }
     static isOptionalValue(val) {
-        return typeof val === "object" && "__isOptional" in val;
+        return val.toString() === "[object MatchaOptional]";
     }
     match(val) {
         if (val === undefined)
@@ -87,17 +75,13 @@ class NullableValue {
             writable: true,
             value: void 0
         });
-        // @ts-expect-error
-        Object.defineProperty(this, "__isNullable", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: true
-        });
         this.classRefs = classRefs;
     }
+    get [Symbol.toStringTag]() {
+        return "MatchaNullable";
+    }
     static isNullableValue(val) {
-        return typeof val === "object" && "__isNullable" in val;
+        return val.toString() === "[object MatchaNullable]";
     }
     match(val) {
         if (val === null)

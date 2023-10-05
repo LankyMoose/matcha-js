@@ -4,28 +4,28 @@ declare class Value {
     static match<T>(lhs: any, val: T): boolean;
 }
 declare class AnyValue {
-    private readonly __isAny;
+    get [Symbol.toStringTag](): string;
     static isAnyValue(val: any): val is AnyValue;
 }
 declare const _: AnyValue;
 declare class TypedValue<T> {
     private readonly classRefs;
     constructor(...classRefs: ClassRef<T>[]);
-    private readonly __isOfType;
+    get [Symbol.toStringTag](): string;
     static isTypedValue(val: any): val is TypedValue<any>;
     match(val: any): boolean;
 }
 declare class OptionalValue<T> {
     private readonly classRefs;
     constructor(...classRefs: ClassRef<T>[]);
-    private readonly __isOptional;
+    get [Symbol.toStringTag](): string;
     static isOptionalValue(val: any): val is OptionalValue<any>;
     match(val: any): boolean;
 }
 declare class NullableValue<T = void> {
     private readonly classRefs;
     constructor(...classRefs: ClassRef<T>[]);
-    private readonly __isNullable;
+    get [Symbol.toStringTag](): string;
     static isNullableValue(val: any): val is NullableValue<any>;
     match(val: any): boolean;
 }

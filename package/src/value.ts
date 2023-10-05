@@ -14,6 +14,8 @@ export {
 
 class Value {
   static match<T>(lhs: any, val: T) {
+    if (typeof lhs !== "object") return false
+
     if (AnyValue.isAnyValue(lhs)) return true
     if (TypedValue.isTypedValue(lhs) && lhs.match(val)) return true
     if (OptionalValue.isOptionalValue(lhs) && lhs.match(val)) return true
@@ -24,10 +26,11 @@ class Value {
 }
 
 class AnyValue {
-  // @ts-expect-error
-  private readonly __isAny = true
+  get [Symbol.toStringTag]() {
+    return "MatchaAny"
+  }
   static isAnyValue(val: any): val is AnyValue {
-    return typeof val === "object" && "__isAny" in val
+    return val.toString() === "[object MatchaAny]"
   }
 }
 
@@ -38,10 +41,11 @@ class TypedValue<T> {
   constructor(...classRefs: ClassRef<T>[]) {
     this.classRefs = classRefs
   }
-  // @ts-expect-error
-  private readonly __isOfType = true
+  get [Symbol.toStringTag]() {
+    return "MatchaTyped"
+  }
   static isTypedValue(val: any): val is TypedValue<any> {
-    return typeof val === "object" && "__isOfType" in val
+    return val.toString() === "[object MatchaTyped]"
   }
 
   match(val: any) {
@@ -54,10 +58,11 @@ class OptionalValue<T> {
   constructor(...classRefs: ClassRef<T>[]) {
     this.classRefs = classRefs
   }
-  // @ts-expect-error
-  private readonly __isOptional = true
+  get [Symbol.toStringTag]() {
+    return "MatchaOptional"
+  }
   static isOptionalValue(val: any): val is OptionalValue<any> {
-    return typeof val === "object" && "__isOptional" in val
+    return val.toString() === "[object MatchaOptional]"
   }
   match(val: any) {
     if (val === undefined) return true
@@ -71,10 +76,11 @@ class NullableValue<T = void> {
   constructor(...classRefs: ClassRef<T>[]) {
     this.classRefs = classRefs
   }
-  // @ts-expect-error
-  private readonly __isNullable = true
+  get [Symbol.toStringTag]() {
+    return "MatchaNullable"
+  }
   static isNullableValue(val: any): val is NullableValue<any> {
-    return typeof val === "object" && "__isNullable" in val
+    return val.toString() === "[object MatchaNullable]"
   }
   match(val: any) {
     if (val === null) return true
