@@ -1,5 +1,4 @@
-import { isObject } from "./util.js";
-export { type, optional, nullable, Value, _ };
+export { type, optional, nullable, Value, _, isObject, isConstructor, deepObjectEq, deepArrayEq, };
 class Value {
     static match(lhs, val) {
         if (AnyValue.isAnyValue(lhs))
@@ -49,9 +48,7 @@ class TypedValue {
         return typeof val === "object" && "__isOfType" in val;
     }
     match(val) {
-        const res = matchTypes(val, this.classRefs);
-        console.log("typedValue match", res);
-        return res;
+        return matchTypes(val, this.classRefs);
     }
 }
 class OptionalValue {
@@ -151,4 +148,67 @@ function matchType(val, classRef) {
         default:
             return val instanceof classRef;
     }
+}
+function isConstructor(value) {
+    return (typeof value === "function" &&
+        value.prototype &&
+        value.prototype.constructor === value);
+}
+function isObject(value) {
+    return (typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value) &&
+        !(value instanceof Promise));
+}
+function deepObjectEq(a, b) {
+    const aKeys = Object.keys(a).sort();
+    const bKeys = Object.keys(b).sort();
+    let optionalCount = 0;
+    for (let i = 0; i < aKeys.length; i++) {
+        const aVal = a[aKeys[i]];
+        const bVal = b[bKeys[i]];
+        if (bKeys[i] === undefined) {
+            if (OptionalValue.isOptionalValue(aVal)) {
+                optionalCount++;
+            }
+            else {
+                return false;
+            }
+        }
+        if (Value.match(aVal, bVal))
+            continue;
+        if (isObject(aVal) && isObject(bVal) && deepObjectEq(aVal, bVal))
+            continue;
+        if (Array.isArray(aVal) && Array.isArray(bVal) && deepArrayEq(aVal, bVal))
+            continue;
+        if (aVal !== bVal)
+            return false;
+    }
+    if (aKeys.length - optionalCount !== bKeys.length) {
+        return false;
+    }
+    return true;
+}
+function deepArrayEq(a, b) {
+    let optionalCount = 0;
+    for (let i = 0; i < a.length; i++) {
+        const aVal = a[i];
+        const bVal = b[i];
+        if (Value.match(aVal, bVal)) {
+            if (OptionalValue.isOptionalValue(aVal)) {
+                optionalCount++;
+            }
+            continue;
+        }
+        if (isObject(aVal) && isObject(bVal) && deepObjectEq(aVal, bVal))
+            continue;
+        if (Array.isArray(aVal) && Array.isArray(bVal) && deepArrayEq(aVal, bVal))
+            continue;
+        if (aVal !== bVal)
+            return false;
+    }
+    if (a.length - optionalCount !== b.length) {
+        return false;
+    }
+    return true;
 }

@@ -29,9 +29,14 @@ import { match, type, _, optional, nullable } from "matcha-js"
 
 // console.log("returnVal: ", returnVal)
 
-match({ a: 123, b: null })([
-  { a: type(Array, Number), b: nullable(Number) },
-  () => console.log("matched"),
-])
+// match({ a: 123 })(
+//   [{ a: 123, b: optional(Number) }, () => console.log("matched")],
+//   [_, () => console.log("no match")]
+// )
 
-match("Test")([type(String), () => console.log("matched")])
+match([1, 2])(
+  [[1, 2], () => console.log("matched")],
+  [_, () => console.log("no match")]
+)
+
+//match("Test")([type(String, Array), () => console.log("matched")])

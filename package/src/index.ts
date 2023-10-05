@@ -1,5 +1,10 @@
-import { isObject, isConstructor, deepObjectEq, deepArrayEq } from "./util.js"
-import { Value } from "./value.js"
+import {
+  Value,
+  isObject,
+  isConstructor,
+  deepObjectEq,
+  deepArrayEq,
+} from "./value.js"
 
 export * from "./value.js"
 

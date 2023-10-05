@@ -1,5 +1,5 @@
 import { ClassRef } from "./types.js";
-export { type, optional, nullable, Value, _ };
+export { type, optional, nullable, Value, _, isObject, isConstructor, deepObjectEq, deepArrayEq, };
 declare class Value {
     static match<T>(lhs: any, val: T): boolean;
 }
@@ -32,3 +32,8 @@ declare class NullableValue<T = void> {
 declare function optional<T>(...classRefs: ClassRef<T>[]): OptionalValue<T>;
 declare function type<T>(...classRefs: ClassRef<T>[]): TypedValue<T>;
 declare function nullable<T>(...classRefs: ClassRef<T>[]): NullableValue<T>;
+declare function isConstructor(value: any): value is new (...args: any[]) => any;
+type Obj = Record<string | symbol | number, unknown>;
+declare function isObject(value: any): value is Obj;
+declare function deepObjectEq(a: Obj, b: Obj): boolean;
+declare function deepArrayEq(a: Array<unknown>, b: Array<unknown>): boolean;

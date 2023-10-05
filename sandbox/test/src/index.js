@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert"
 
-import { match, type, _ } from "matcha-js"
+import { match, type, _, nullable, optional } from "matcha-js"
 
 test("primitive value", () => {
   const expected = 42
@@ -130,6 +130,57 @@ test("complex object", () => {
 test("multi-type match", () => {
   const expected = 42
   const actual = match(42)([type(String, Number), expected], [_, "nope"])
+
+  assert.strictEqual(actual, expected)
+})
+
+test("nullable primitive", () => {
+  const expected = 42
+  const actual = match(null)([nullable(Number), expected], [_, "nope"])
+
+  assert.strictEqual(actual, expected)
+})
+
+test("nullable property", () => {
+  const expected = 42
+  const actual = match({ a: null })(
+    [{ a: nullable(Number) }, expected],
+    [_, "nope"]
+  )
+
+  assert.strictEqual(actual, expected)
+})
+
+test("optional primitive", () => {
+  const expected = 42
+  const actual = match(undefined)([optional(Number), expected], [_, "nope"])
+
+  assert.strictEqual(actual, expected)
+})
+
+test("optional property", () => {
+  const expected = 42
+  const actual = match({})([{ a: optional(Number) }, expected], [_, "nope"])
+
+  assert.strictEqual(actual, expected)
+})
+
+test("nullable array value", () => {
+  const expected = 42
+  const actual = match([1, 2, null])(
+    [[1, 2, nullable(Number)], expected],
+    [_, "nope"]
+  )
+
+  assert.strictEqual(actual, expected)
+})
+
+test("optional array value", () => {
+  const expected = 42
+  const actual = match([1, 2])(
+    [[1, 2, optional(Number)], expected],
+    [_, "nope"]
+  )
 
   assert.strictEqual(actual, expected)
 })
