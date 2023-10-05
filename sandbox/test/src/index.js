@@ -225,11 +225,21 @@ test("multiple spread arrays", () => {
   assert.strictEqual(actual, expected)
 })
 
-test("spreads on meth", () => {
+test("array spreads on meth", () => {
   const expected = 42
   const actual = match([1, 2, 3, 4, 5, "Test", 1, {}])(
     [[...type(Number), type(String), ..._], expected],
     [_, () => console.log("no match")]
+  )
+
+  assert.strictEqual(actual, expected)
+})
+
+test("partial object", () => {
+  const expected = 42
+  const actual = match({ x: 1, y: 2, z: 3 })(
+    [{ x: 1, ..._ }, expected],
+    [_, "nope"]
   )
 
   assert.strictEqual(actual, expected)

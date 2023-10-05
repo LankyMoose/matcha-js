@@ -3,7 +3,10 @@ import { ClassRef, Constructor, Obj } from "./types.js"
 export { type, optional, nullable, Value, _, omniMatch }
 
 class Value {
-  isSpread: boolean = false
+  #_isSpread: boolean = false
+  get isSpread(): boolean {
+    return this.#_isSpread
+  }
 
   static isValue(val: any): val is Value {
     if (typeof val !== "object") return false
@@ -25,12 +28,13 @@ class Value {
   }
 
   [Symbol.iterator](): Iterator<Value> {
+    console.log("iterator")
     let i = 0
     return {
       next: () => {
         if (i === 0) {
           i++
-          this.isSpread = true
+          this.#_isSpread = true
           return { value: this, done: false }
         }
         return { value: undefined, done: true }
@@ -39,12 +43,22 @@ class Value {
   }
 }
 
+const anySymbol = Symbol("matcha_any")
+
 class AnyValue extends Value {
+  // @ts-expect-error
+  private readonly [anySymbol] = true
+
   get [Symbol.toStringTag]() {
     return "MatchaAny"
   }
   static isAnyValue(val: any): val is AnyValue {
     return val.toString() === "[object MatchaAny]"
+  }
+  static isPartialObject(val: any): boolean {
+    return (
+      val && typeof val === "object" && anySymbol in val && val[anySymbol] === anySymbol
+    )
   }
 }
 

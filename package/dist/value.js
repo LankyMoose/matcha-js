@@ -1,12 +1,22 @@
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+};
+var _Value__isSpread, _a;
 export { type, optional, nullable, Value, _, omniMatch };
 class Value {
     constructor() {
-        Object.defineProperty(this, "isSpread", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
+        _Value__isSpread.set(this, false);
+    }
+    get isSpread() {
+        return __classPrivateFieldGet(this, _Value__isSpread, "f");
     }
     static isValue(val) {
         if (typeof val !== "object")
@@ -27,13 +37,14 @@ class Value {
             return value.match(val);
         return false;
     }
-    [Symbol.iterator]() {
+    [(_Value__isSpread = new WeakMap(), Symbol.iterator)]() {
+        console.log("iterator");
         let i = 0;
         return {
             next: () => {
                 if (i === 0) {
                     i++;
-                    this.isSpread = true;
+                    __classPrivateFieldSet(this, _Value__isSpread, true, "f");
                     return { value: this, done: false };
                 }
                 return { value: undefined, done: true };
@@ -41,12 +52,26 @@ class Value {
         };
     }
 }
+const anySymbol = Symbol("matcha_any");
 class AnyValue extends Value {
-    get [Symbol.toStringTag]() {
+    constructor() {
+        super(...arguments);
+        // @ts-expect-error
+        Object.defineProperty(this, _a, {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: true
+        });
+    }
+    get [(_a = anySymbol, Symbol.toStringTag)]() {
         return "MatchaAny";
     }
     static isAnyValue(val) {
         return val.toString() === "[object MatchaAny]";
+    }
+    static isPartialObject(val) {
+        return (val && typeof val === "object" && anySymbol in val && val[anySymbol] === anySymbol);
     }
 }
 const _ = new AnyValue();
