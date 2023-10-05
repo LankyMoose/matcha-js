@@ -31,16 +31,31 @@ console.log(y) // "something else"
 Objects:
 
 ```js
-import { match, any } from "matcha-js"
+import { match, type } from "matcha-js"
 
 const point = { x: 1, y: 2 }
 
 match(point)(
   [{ x: 1, y: 42 }, () => console.log("point is 1, 42")],
-  [{ x: 1, y: any(Number) }, () => console.log("point is 1, (a number)")],
-  [{ x: any(Number), y: 2 }, () => console.log("point is (a number), 2")]
+  [{ x: 1, y: type(Number) }, () => console.log("point is 1, (a number)")],
+  [{ x: type(Number), y: 2 }, () => console.log("point is (a number), 2")]
 )
 // "point is 1, (a number)"
+```
+
+Arrays:
+
+```js
+import { match, type } from "matcha-js"
+
+const value = [1, 2, 3]
+
+match(value)(
+  [[1, 2, 3], () => console.log("value is [1, 2, 3]")],
+  [[1, 2, type(Number)], () => console.log("value is [1, 2, (a number)]")],
+  [[], () => console.log("value is an empty array")]
+)
+// "value is [1, 2, 3]"
 ```
 
 Classes:
@@ -57,7 +72,7 @@ match(value)(
 // "value is a string"
 ```
 
-Patterns:
+Regex:
 
 ```js
 import { match } from "matcha-js"
@@ -74,12 +89,60 @@ match(value)(
 Complex matching:
 
 ```js
-import { match, any, _ } from "matcha-js"
+import { match, type, _ } from "matcha-js"
 
 const value = { x: 1, y: { z: 2 } }
 
 match(value)([
-  { x: _, y: { z: any(Number) } },
+  { x: _, y: { z: type(Number) } },
   () => console.log("value is {x: _, y: { z: (a number) }}"),
 ])
+// "value is {x: _, y: { z: (a number) }}"
+```
+
+Nullables:
+
+```js
+import { match, nullable, type } from "matcha-js"
+
+match(null)(
+  [nullable(String), () => console.log("value is a string or null")],
+  [nullable(Number), () => console.log("value is a number or null")]
+)
+// "value is a string or null"
+
+match({ a: 123, b: null })([
+  { a: type(Number), b: nullable(String) },
+  () => console.log("value is {a: (a number), b: (a string or null)}"),
+])
+// "value is {a: (a number), b: (a string or null)}"
+```
+
+Optionals:
+
+```js
+import { match, optional, type } from "matcha-js"
+
+match(undefined)(
+  [optional(String), () => console.log("value is a string or undefined")],
+  [optional(Number), () => console.log("value is a number or undefined")]
+)
+// "value is a string or undefined"
+
+match({ a: 123 })([
+  { a: type(Number), b: optional(String) },
+  () => console.log("value is {a: (a number), b: (a string or undefined)}"),
+])
+// "value is {a: (a number), b: (a string or undefined)}"
+```
+
+Multi-type matching:
+
+```js
+import { match, type, _ } from "matcha-js"
+
+match("1")(
+  [type(String, Number), () => console.log("value is string or number")],
+  [_, () => console.log("value is not string or number")]
+)
 ```
