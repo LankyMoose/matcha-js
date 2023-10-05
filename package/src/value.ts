@@ -1,4 +1,4 @@
-import { ClassRef, PrimitiveConstructor } from "./types.js"
+import { ClassRef, PrimitiveConstructor, Obj } from "./types.js"
 
 export {
   type,
@@ -13,19 +13,36 @@ export {
 }
 
 class Value {
+  // @ts-expect-error
+  private isSpread: boolean = false
+
   static match<T>(lhs: any, val: T) {
     if (typeof lhs !== "object") return false
 
     if (AnyValue.isAnyValue(lhs)) return true
-    if (TypedValue.isTypedValue(lhs) && lhs.match(val)) return true
-    if (OptionalValue.isOptionalValue(lhs) && lhs.match(val)) return true
-    if (NullableValue.isNullableValue(lhs) && lhs.match(val)) return true
+    if (TypedValue.isTypedValue(lhs)) return lhs.match(val)
+    if (OptionalValue.isOptionalValue(lhs)) return lhs.match(val)
+    if (NullableValue.isNullableValue(lhs)) return lhs.match(val)
 
     return false
   }
+
+  [Symbol.iterator](): Iterator<Value> {
+    let i = 0
+    return {
+      next: () => {
+        if (i === 0) {
+          i++
+          this.isSpread = true
+          return { value: this, done: false }
+        }
+        return { value: undefined, done: true }
+      },
+    }
+  }
 }
 
-class AnyValue {
+class AnyValue extends Value {
   get [Symbol.toStringTag]() {
     return "MatchaAny"
   }
@@ -36,9 +53,10 @@ class AnyValue {
 
 const _ = new AnyValue()
 
-class TypedValue<T> {
+class TypedValue<T> extends Value {
   private readonly classRefs: ClassRef<T>[]
   constructor(...classRefs: ClassRef<T>[]) {
+    super()
     this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
@@ -53,9 +71,10 @@ class TypedValue<T> {
   }
 }
 
-class OptionalValue<T> {
+class OptionalValue<T> extends Value {
   private readonly classRefs: ClassRef<T>[]
   constructor(...classRefs: ClassRef<T>[]) {
+    super()
     this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
@@ -71,9 +90,10 @@ class OptionalValue<T> {
   }
 }
 
-class NullableValue<T = void> {
+class NullableValue<T = void> extends Value {
   private readonly classRefs: ClassRef<T>[]
   constructor(...classRefs: ClassRef<T>[]) {
+    super()
     this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
@@ -102,10 +122,7 @@ function nullable<T>(...classRefs: ClassRef<T>[]) {
 }
 
 function matchTypes<T>(val: any, classRefs: ClassRef<T>[]) {
-  for (const classRef of classRefs) {
-    if (matchType(val, classRef)) return true
-  }
-  return false
+  return classRefs.some((classRef) => matchType(val, classRef))
 }
 
 function matchType<T>(val: any, classRef: ClassRef<T> | PrimitiveConstructor) {
@@ -143,8 +160,6 @@ function isConstructor(value: any): value is new (...args: any[]) => any {
   )
 }
 
-type Obj = Record<string | symbol | number, unknown>
-
 function isObject(value: any): value is Obj {
   return (
     typeof value === "object" &&
@@ -154,57 +169,62 @@ function isObject(value: any): value is Obj {
   )
 }
 
-function deepObjectEq(a: Obj, b: Obj) {
-  const aKeys = Object.keys(a).sort()
-  const bKeys = Object.keys(b).sort()
+function deepObjectEq(pattern: Obj, value: Obj) {
+  const pKeys = Object.keys(pattern).sort()
+  const vKeys = Object.keys(value).sort()
 
   let optionalCount = 0
 
-  for (let i = 0; i < aKeys.length; i++) {
-    const aVal = a[aKeys[i]]
-    const bVal = b[bKeys[i]]
+  for (let i = 0; i < pKeys.length; i++) {
+    const pVal = pattern[pKeys[i]]
+    const vVal = value[vKeys[i]]
 
-    if (bKeys[i] === undefined) {
-      if (OptionalValue.isOptionalValue(aVal)) {
+    if (vKeys[i] === undefined) {
+      if (OptionalValue.isOptionalValue(pVal)) {
         optionalCount++
       } else {
         return false
       }
     }
 
-    if (Value.match(aVal, bVal)) continue
-    if (isObject(aVal) && isObject(bVal) && deepObjectEq(aVal, bVal)) continue
-    if (Array.isArray(aVal) && Array.isArray(bVal) && deepArrayEq(aVal, bVal))
+    if (Value.match(pVal, vVal)) continue
+    if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) continue
+    if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(pVal, vVal))
       continue
-    if (aVal !== bVal) return false
+    if (pVal !== vVal) return false
   }
 
-  if (aKeys.length - optionalCount !== bKeys.length) {
+  if (pKeys.length - optionalCount !== vKeys.length) {
     return false
   }
 
   return true
 }
 
-function deepArrayEq(a: Array<unknown>, b: Array<unknown>) {
+function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
   let optionalCount = 0
 
-  for (let i = 0; i < a.length; i++) {
-    const aVal = a[i]
-    const bVal = b[i]
+  for (let i = 0; i < pattern.length; i++) {
+    const pItem = pattern[i]
+    const vItem = value[i]
 
-    if (Value.match(aVal, bVal)) {
-      if (OptionalValue.isOptionalValue(aVal)) {
+    if (Value.match(pItem, vItem)) {
+      if (OptionalValue.isOptionalValue(pItem)) {
         optionalCount++
       }
       continue
     }
-    if (isObject(aVal) && isObject(bVal) && deepObjectEq(aVal, bVal)) continue
-    if (Array.isArray(aVal) && Array.isArray(bVal) && deepArrayEq(aVal, bVal))
+    if (isObject(pItem) && isObject(vItem) && deepObjectEq(pItem, vItem))
       continue
-    if (aVal !== bVal) return false
+    if (
+      Array.isArray(pItem) &&
+      Array.isArray(vItem) &&
+      deepArrayEq(pItem, vItem)
+    )
+      continue
+    if (pItem !== vItem) return false
   }
-  if (a.length - optionalCount !== b.length) {
+  if (pattern.length - optionalCount !== value.length) {
     return false
   }
   return true

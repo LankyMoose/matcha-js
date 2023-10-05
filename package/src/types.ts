@@ -13,3 +13,5 @@ export type PrimitiveConstructor =
   | ErrorConstructor
   | PromiseConstructor
   | DateConstructor
+
+export type Obj = Record<string | symbol | number, unknown>

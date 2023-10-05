@@ -1,20 +1,42 @@
 export { type, optional, nullable, Value, _, isObject, isConstructor, deepObjectEq, deepArrayEq, };
 class Value {
+    constructor() {
+        // @ts-expect-error
+        Object.defineProperty(this, "isSpread", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+    }
     static match(lhs, val) {
         if (typeof lhs !== "object")
             return false;
         if (AnyValue.isAnyValue(lhs))
             return true;
-        if (TypedValue.isTypedValue(lhs) && lhs.match(val))
-            return true;
-        if (OptionalValue.isOptionalValue(lhs) && lhs.match(val))
-            return true;
-        if (NullableValue.isNullableValue(lhs) && lhs.match(val))
-            return true;
+        if (TypedValue.isTypedValue(lhs))
+            return lhs.match(val);
+        if (OptionalValue.isOptionalValue(lhs))
+            return lhs.match(val);
+        if (NullableValue.isNullableValue(lhs))
+            return lhs.match(val);
         return false;
     }
+    [Symbol.iterator]() {
+        let i = 0;
+        return {
+            next: () => {
+                if (i === 0) {
+                    i++;
+                    this.isSpread = true;
+                    return { value: this, done: false };
+                }
+                return { value: undefined, done: true };
+            },
+        };
+    }
 }
-class AnyValue {
+class AnyValue extends Value {
     get [Symbol.toStringTag]() {
         return "MatchaAny";
     }
@@ -23,8 +45,9 @@ class AnyValue {
     }
 }
 const _ = new AnyValue();
-class TypedValue {
+class TypedValue extends Value {
     constructor(...classRefs) {
+        super();
         Object.defineProperty(this, "classRefs", {
             enumerable: true,
             configurable: true,
@@ -43,8 +66,9 @@ class TypedValue {
         return matchTypes(val, this.classRefs);
     }
 }
-class OptionalValue {
+class OptionalValue extends Value {
     constructor(...classRefs) {
+        super();
         Object.defineProperty(this, "classRefs", {
             enumerable: true,
             configurable: true,
@@ -67,8 +91,9 @@ class OptionalValue {
         return matchTypes(val, this.classRefs);
     }
 }
-class NullableValue {
+class NullableValue extends Value {
     constructor(...classRefs) {
+        super();
         Object.defineProperty(this, "classRefs", {
             enumerable: true,
             configurable: true,
@@ -101,11 +126,7 @@ function nullable(...classRefs) {
     return new NullableValue(...classRefs);
 }
 function matchTypes(val, classRefs) {
-    for (const classRef of classRefs) {
-        if (matchType(val, classRef))
-            return true;
-    }
-    return false;
+    return classRefs.some((classRef) => matchType(val, classRef));
 }
 function matchType(val, classRef) {
     switch (classRef) {
@@ -144,54 +165,56 @@ function isObject(value) {
         !Array.isArray(value) &&
         !(value instanceof Promise));
 }
-function deepObjectEq(a, b) {
-    const aKeys = Object.keys(a).sort();
-    const bKeys = Object.keys(b).sort();
+function deepObjectEq(pattern, value) {
+    const pKeys = Object.keys(pattern).sort();
+    const vKeys = Object.keys(value).sort();
     let optionalCount = 0;
-    for (let i = 0; i < aKeys.length; i++) {
-        const aVal = a[aKeys[i]];
-        const bVal = b[bKeys[i]];
-        if (bKeys[i] === undefined) {
-            if (OptionalValue.isOptionalValue(aVal)) {
+    for (let i = 0; i < pKeys.length; i++) {
+        const pVal = pattern[pKeys[i]];
+        const vVal = value[vKeys[i]];
+        if (vKeys[i] === undefined) {
+            if (OptionalValue.isOptionalValue(pVal)) {
                 optionalCount++;
             }
             else {
                 return false;
             }
         }
-        if (Value.match(aVal, bVal))
+        if (Value.match(pVal, vVal))
             continue;
-        if (isObject(aVal) && isObject(bVal) && deepObjectEq(aVal, bVal))
+        if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal))
             continue;
-        if (Array.isArray(aVal) && Array.isArray(bVal) && deepArrayEq(aVal, bVal))
+        if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(pVal, vVal))
             continue;
-        if (aVal !== bVal)
+        if (pVal !== vVal)
             return false;
     }
-    if (aKeys.length - optionalCount !== bKeys.length) {
+    if (pKeys.length - optionalCount !== vKeys.length) {
         return false;
     }
     return true;
 }
-function deepArrayEq(a, b) {
+function deepArrayEq(pattern, value) {
     let optionalCount = 0;
-    for (let i = 0; i < a.length; i++) {
-        const aVal = a[i];
-        const bVal = b[i];
-        if (Value.match(aVal, bVal)) {
-            if (OptionalValue.isOptionalValue(aVal)) {
+    for (let i = 0; i < pattern.length; i++) {
+        const pItem = pattern[i];
+        const vItem = value[i];
+        if (Value.match(pItem, vItem)) {
+            if (OptionalValue.isOptionalValue(pItem)) {
                 optionalCount++;
             }
             continue;
         }
-        if (isObject(aVal) && isObject(bVal) && deepObjectEq(aVal, bVal))
+        if (isObject(pItem) && isObject(vItem) && deepObjectEq(pItem, vItem))
             continue;
-        if (Array.isArray(aVal) && Array.isArray(bVal) && deepArrayEq(aVal, bVal))
+        if (Array.isArray(pItem) &&
+            Array.isArray(vItem) &&
+            deepArrayEq(pItem, vItem))
             continue;
-        if (aVal !== bVal)
+        if (pItem !== vItem)
             return false;
     }
-    if (a.length - optionalCount !== b.length) {
+    if (pattern.length - optionalCount !== value.length) {
         return false;
     }
     return true;
