@@ -294,6 +294,7 @@ function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
       vi++
       continue
     } else {
+      if (!pItem) return false
       // handle cases where:
       // value = ["start", "middle", "end", "the very end"]
       // pattern = [...type(String), "end", "the very end"]
@@ -343,30 +344,6 @@ function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
   return true
 }
 
-function omniMatch(value: unknown, pattern: unknown) {
-  if (value === pattern) return true
-
-  if (primitiveMatch(value, pattern)) return true
-
-  if (arrayMatch(value, pattern)) return true
-
-  if (Value.isValue(pattern) && Value.match(pattern, value)) return true
-
-  if (objectMatch(value, pattern)) return true
-
-  return false
-}
-
-function arrayMatch(value: unknown, pattern: unknown) {
-  if (!Array.isArray(value)) return false
-
-  if (pattern === Array) return true
-
-  if (Array.isArray(pattern) && deepArrayEq(pattern, value)) return true
-
-  return false
-}
-
 function primitiveMatch(value: unknown, pattern: unknown) {
   switch (typeof value) {
     case "string":
@@ -403,10 +380,6 @@ function primitiveMatch(value: unknown, pattern: unknown) {
   return false
 }
 
-// function instanceMatch(value: unknown, classRefs: Constructor<unknown>[]) {
-//   return classRefs.some((classRef) => value instanceof classRef)
-// }
-
 function objectMatch(value: unknown, pattern: unknown) {
   if (!isObject(value)) return false
 
@@ -414,7 +387,24 @@ function objectMatch(value: unknown, pattern: unknown) {
 
   if (isConstructor(pattern) && value instanceof pattern) return true
 
-  if (isObject(pattern) && deepObjectEq(pattern, value)) return true
+  return isObject(pattern) && deepObjectEq(pattern, value)
+}
 
-  return false
+function omniMatch(value: unknown, pattern: unknown) {
+  return (
+    value === pattern ||
+    primitiveMatch(value, pattern) ||
+    objectMatch(value, pattern) ||
+    arrayMatch(value, pattern) ||
+    (Value.isValue(pattern) && Value.match(pattern, value)) ||
+    objectMatch(value, pattern)
+  )
+}
+
+function arrayMatch(value: unknown, pattern: unknown) {
+  if (!Array.isArray(value)) return false
+
+  if (pattern === Array) return true
+
+  return Array.isArray(pattern) && deepArrayEq(pattern, value)
 }

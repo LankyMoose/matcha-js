@@ -19,7 +19,7 @@ test("class constructor", () => {
 
 test("_", () => {
   const expected = 42
-  const actual = match({})(["a random string", "hello world"], [_, expected])
+  const actual = match({})([[], "hello world"], [_, expected])
 
   assert.strictEqual(actual, expected)
 })
@@ -71,7 +71,7 @@ test("array with type", () => {
 
 test("array with _", () => {
   const expected = 42
-  const actual = match([1, 2, 69])([[1, 2, _], expected], [_, "nope"])
+  const actual = match([1, 2, 68, 69])([[1, 2, _, 69], expected], [_, "nope"])
 
   assert.strictEqual(actual, expected)
 })
