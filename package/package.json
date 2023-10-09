@@ -18,8 +18,5 @@
     "patternmatch"
   ],
   "author": "Robby6Strings",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/node": "^20.8.2"
-  }
+  "license": "ISC"
 }
