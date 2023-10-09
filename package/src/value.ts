@@ -62,16 +62,16 @@ class AnyValue extends Value {
 
 const _ = new AnyValue()
 
-class TypedValue<T> extends Value {
-  private readonly classRefs: ClassRef<T>[]
-  constructor(...classRefs: ClassRef<T>[]) {
+class TypedValue extends Value {
+  private readonly classRefs: ClassRef<unknown>[]
+  constructor(...classRefs: ClassRef<unknown>[]) {
     super()
     this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
     return "MatchaTyped"
   }
-  static isTypedValue(val: any): val is TypedValue<any> {
+  static isTypedValue(val: any): val is TypedValue {
     return val.toString() === "[object MatchaTyped]"
   }
 
@@ -80,16 +80,16 @@ class TypedValue<T> extends Value {
   }
 }
 
-class OptionalValue<T> extends Value {
-  private readonly classRefs: ClassRef<T>[]
-  constructor(...classRefs: ClassRef<T>[]) {
+class OptionalValue extends Value {
+  private readonly classRefs: ClassRef<unknown>[]
+  constructor(...classRefs: ClassRef<unknown>[]) {
     super()
     this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
     return "MatchaOptional"
   }
-  static isOptionalValue(val: any): val is OptionalValue<any> {
+  static isOptionalValue(val: any): val is OptionalValue {
     return val.toString() === "[object MatchaOptional]"
   }
   match(val: any) {
@@ -99,16 +99,16 @@ class OptionalValue<T> extends Value {
   }
 }
 
-class NullableValue<T = void> extends Value {
-  private readonly classRefs: ClassRef<T>[]
-  constructor(...classRefs: ClassRef<T>[]) {
+class NullableValue extends Value {
+  private readonly classRefs: ClassRef<unknown>[]
+  constructor(...classRefs: ClassRef<unknown>[]) {
     super()
     this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
     return "MatchaNullable"
   }
-  static isNullableValue(val: any): val is NullableValue<any> {
+  static isNullableValue(val: any): val is NullableValue {
     return val.toString() === "[object MatchaNullable]"
   }
   match(val: any) {
@@ -118,23 +118,23 @@ class NullableValue<T = void> extends Value {
   }
 }
 
-function optional<T>(...classRefs: ClassRef<T>[]) {
+function optional(...classRefs: ClassRef<unknown>[]) {
   return new OptionalValue(...classRefs)
 }
 
-function type<T>(...classRefs: ClassRef<T>[]) {
+function type(...classRefs: ClassRef<unknown>[]) {
   return new TypedValue(...classRefs)
 }
 
-function nullable<T>(...classRefs: ClassRef<T>[]) {
+function nullable(...classRefs: ClassRef<unknown>[]) {
   return new NullableValue(...classRefs)
 }
 
-function matchTypes<T>(val: any, classRefs: ClassRef<T>[]) {
+function matchTypes(val: any, classRefs: ClassRef<unknown>[]) {
   return classRefs.some((classRef) => matchType(val, classRef))
 }
 
-function matchType<T>(val: any, classRef: ClassRef<T>) {
+function matchType(val: any, classRef: ClassRef<unknown>) {
   switch (classRef) {
     case String:
       return typeof val === "string"
@@ -178,7 +178,7 @@ function isObject(value: any): value is Obj {
   )
 }
 
-function deepObjectEq(pattern: Obj, value: Obj) {
+function deepObjectEq(value: Obj, pattern: Obj) {
   const isPartial = AnyValue.isPartialObject(pattern)
 
   const pKeys = Object.keys(pattern).sort()
@@ -202,11 +202,11 @@ function deepObjectEq(pattern: Obj, value: Obj) {
       continue
     }
 
-    if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(pVal, vVal)) {
+    if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(vVal, pVal)) {
       continue
     }
 
-    if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) {
+    if (isObject(pVal) && isObject(vVal) && deepObjectEq(vVal, pVal)) {
       continue
     }
 
@@ -231,12 +231,12 @@ function deepObjectEq(pattern: Obj, value: Obj) {
       }
 
       if (Array.isArray(pVal) && Array.isArray(vVal)) {
-        if (!deepArrayEq(pVal, vVal)) return false
+        if (!deepArrayEq(vVal, pVal)) return false
         continue
       }
 
       if (isObject(pVal) && isObject(vVal)) {
-        if (!deepObjectEq(pVal, vVal)) return false
+        if (!deepObjectEq(vVal, pVal)) return false
         continue
       }
 
@@ -247,7 +247,7 @@ function deepObjectEq(pattern: Obj, value: Obj) {
   return true
 }
 
-function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
+function deepArrayEq(value: Array<unknown>, pattern: Array<unknown>) {
   let pi = 0
   let vi = 0
 
@@ -293,13 +293,14 @@ function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
     }
 
     if (isObject(pItem) && isObject(vItem)) {
-      if (!deepObjectEq(pItem, vItem)) return false
+      if (!deepObjectEq(vItem, pItem)) return false
       pi++
       vi++
       continue
     }
 
-    if (Array.isArray(pItem) && Array.isArray(vItem) && deepArrayEq(pItem, vItem)) {
+    if (Array.isArray(pItem) && Array.isArray(vItem)) {
+      if (!deepArrayEq(vItem, pItem)) return false
       pi++
       vi++
       continue
@@ -335,7 +336,8 @@ function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
         continue
       }
 
-      if (Array.isArray(pItem) && Array.isArray(vItem) && deepArrayEq(pItem, vItem)) {
+      if (Array.isArray(pItem) && Array.isArray(vItem)) {
+        if (!deepArrayEq(vItem, pItem)) return false
         pi++
         vi++
         continue
@@ -347,7 +349,8 @@ function deepArrayEq(pattern: Array<unknown>, value: Array<unknown>) {
         continue
       }
 
-      if (isObject(pItem) && isObject(vItem) && deepObjectEq(pItem, vItem)) {
+      if (isObject(pItem) && isObject(vItem)) {
+        if (!deepObjectEq(vItem, pItem)) return false
         pi++
         vi++
         continue
@@ -403,7 +406,7 @@ function objectMatch(value: unknown, pattern: unknown) {
 
   if (isConstructor(pattern) && value instanceof pattern) return true
 
-  return isObject(pattern) && deepObjectEq(pattern, value)
+  return isObject(pattern) && deepObjectEq(value, pattern)
 }
 
 function omniMatch(value: unknown, pattern: unknown) {
@@ -422,5 +425,5 @@ function arrayMatch(value: unknown, pattern: unknown) {
 
   if (pattern === Array) return true
 
-  return Array.isArray(pattern) && deepArrayEq(pattern, value)
+  return Array.isArray(pattern) && deepArrayEq(value, pattern)
 }

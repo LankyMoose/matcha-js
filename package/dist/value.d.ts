@@ -15,28 +15,28 @@ declare class AnyValue extends Value {
     static isPartialObject(val: Obj): boolean;
 }
 declare const _: AnyValue;
-declare class TypedValue<T> extends Value {
+declare class TypedValue extends Value {
     private readonly classRefs;
-    constructor(...classRefs: ClassRef<T>[]);
+    constructor(...classRefs: ClassRef<unknown>[]);
     get [Symbol.toStringTag](): string;
-    static isTypedValue(val: any): val is TypedValue<any>;
+    static isTypedValue(val: any): val is TypedValue;
     match(val: any): boolean;
 }
-declare class OptionalValue<T> extends Value {
+declare class OptionalValue extends Value {
     private readonly classRefs;
-    constructor(...classRefs: ClassRef<T>[]);
+    constructor(...classRefs: ClassRef<unknown>[]);
     get [Symbol.toStringTag](): string;
-    static isOptionalValue(val: any): val is OptionalValue<any>;
+    static isOptionalValue(val: any): val is OptionalValue;
     match(val: any): boolean;
 }
-declare class NullableValue<T = void> extends Value {
+declare class NullableValue extends Value {
     private readonly classRefs;
-    constructor(...classRefs: ClassRef<T>[]);
+    constructor(...classRefs: ClassRef<unknown>[]);
     get [Symbol.toStringTag](): string;
-    static isNullableValue(val: any): val is NullableValue<any>;
+    static isNullableValue(val: any): val is NullableValue;
     match(val: any): boolean;
 }
-declare function optional<T>(...classRefs: ClassRef<T>[]): OptionalValue<T>;
-declare function type<T>(...classRefs: ClassRef<T>[]): TypedValue<T>;
-declare function nullable<T>(...classRefs: ClassRef<T>[]): NullableValue<T>;
+declare function optional(...classRefs: ClassRef<unknown>[]): OptionalValue;
+declare function type(...classRefs: ClassRef<unknown>[]): TypedValue;
+declare function nullable(...classRefs: ClassRef<unknown>[]): NullableValue;
 declare function omniMatch(value: unknown, pattern: unknown): boolean;

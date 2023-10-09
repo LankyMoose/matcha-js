@@ -195,7 +195,7 @@ function isObject(value) {
         !Array.isArray(value) &&
         !(value instanceof Promise));
 }
-function deepObjectEq(pattern, value) {
+function deepObjectEq(value, pattern) {
     const isPartial = AnyValue.isPartialObject(pattern);
     const pKeys = Object.keys(pattern).sort();
     const vKeys = Object.keys(value).sort();
@@ -214,13 +214,12 @@ function deepObjectEq(pattern, value) {
                 return false;
             continue;
         }
-        if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(pVal, vVal)) {
+        if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(vVal, pVal)) {
             continue;
         }
-        if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) {
+        if (isObject(pVal) && isObject(vVal) && deepObjectEq(vVal, pVal)) {
             continue;
         }
-        console.log(pVal, vVal);
         if (pVal !== vVal)
             return false;
     }
@@ -240,12 +239,12 @@ function deepObjectEq(pattern, value) {
                 continue;
             }
             if (Array.isArray(pVal) && Array.isArray(vVal)) {
-                if (!deepArrayEq(pVal, vVal))
+                if (!deepArrayEq(vVal, pVal))
                     return false;
                 continue;
             }
             if (isObject(pVal) && isObject(vVal)) {
-                if (!deepObjectEq(pVal, vVal))
+                if (!deepObjectEq(vVal, pVal))
                     return false;
                 continue;
             }
@@ -255,7 +254,7 @@ function deepObjectEq(pattern, value) {
     }
     return true;
 }
-function deepArrayEq(pattern, value) {
+function deepArrayEq(value, pattern) {
     let pi = 0;
     let vi = 0;
     while (pi < pattern.length || vi < value.length) {
@@ -296,13 +295,15 @@ function deepArrayEq(pattern, value) {
             continue;
         }
         if (isObject(pItem) && isObject(vItem)) {
-            if (!deepObjectEq(pItem, vItem))
+            if (!deepObjectEq(vItem, pItem))
                 return false;
             pi++;
             vi++;
             continue;
         }
-        if (Array.isArray(pItem) && Array.isArray(vItem) && deepArrayEq(pItem, vItem)) {
+        if (Array.isArray(pItem) && Array.isArray(vItem)) {
+            if (!deepArrayEq(vItem, pItem))
+                return false;
             pi++;
             vi++;
             continue;
@@ -334,7 +335,9 @@ function deepArrayEq(pattern, value) {
                 vi++;
                 continue;
             }
-            if (Array.isArray(pItem) && Array.isArray(vItem) && deepArrayEq(pItem, vItem)) {
+            if (Array.isArray(pItem) && Array.isArray(vItem)) {
+                if (!deepArrayEq(vItem, pItem))
+                    return false;
                 pi++;
                 vi++;
                 continue;
@@ -344,7 +347,9 @@ function deepArrayEq(pattern, value) {
                 vi++;
                 continue;
             }
-            if (isObject(pItem) && isObject(vItem) && deepObjectEq(pItem, vItem)) {
+            if (isObject(pItem) && isObject(vItem)) {
+                if (!deepObjectEq(vItem, pItem))
+                    return false;
                 pi++;
                 vi++;
                 continue;
@@ -394,7 +399,7 @@ function objectMatch(value, pattern) {
         return true;
     if (isConstructor(pattern) && value instanceof pattern)
         return true;
-    return isObject(pattern) && deepObjectEq(pattern, value);
+    return isObject(pattern) && deepObjectEq(value, pattern);
 }
 function omniMatch(value, pattern) {
     return (value === pattern ||
@@ -409,5 +414,5 @@ function arrayMatch(value, pattern) {
         return false;
     if (pattern === Array)
         return true;
-    return Array.isArray(pattern) && deepArrayEq(pattern, value);
+    return Array.isArray(pattern) && deepArrayEq(value, pattern);
 }
