@@ -196,48 +196,67 @@ function isObject(value) {
         !(value instanceof Promise));
 }
 function deepObjectEq(pattern, value) {
-    let optionalCount = 0;
     const isPartial = AnyValue.isPartialObject(pattern);
     const pKeys = Object.keys(pattern).sort();
     const vKeys = Object.keys(value).sort();
-    for (let i = 0; i < pKeys.length; i++) {
-        if (!isPartial) {
-            // ensure key match
-            if (pKeys[i] && vKeys[i] && pKeys[i] !== vKeys[i]) {
-                return false;
+    for (let i = 0; i < vKeys.length; i++) {
+        const vKey = vKeys[i];
+        const pVal = pattern[vKey];
+        const vVal = value[vKey];
+        if (pVal === undefined) {
+            if (isPartial && vVal !== undefined) {
+                continue;
             }
-        }
-        const vVal = value[vKeys[i]];
-        const pVal = isPartial ? pattern[vKeys[i]] : pattern[pKeys[i]];
-        if (vKeys[i] === undefined) {
-            if (OptionalValue.isOptionalValue(pVal)) {
-                optionalCount++;
-            }
-            else {
-                return false;
-            }
-        }
-        else if (isPartial && !pKeys.includes(vKeys[i])) {
-            continue;
-        }
-        if (Value.isValue(pVal) && Value.match(pVal, vVal))
-            continue;
-        if (isObject(pVal) && isObject(vVal)) {
-            if (!deepObjectEq(pVal, vVal))
-                return false;
-            continue;
-        }
-        if (Array.isArray(pVal) && Array.isArray(vVal)) {
-            if (!deepArrayEq(pVal, vVal))
-                return false;
-            continue;
-        }
-        if (pVal !== vVal) {
             return false;
         }
+        // if (pVal === null) {
+        //   if (vVal !== null) return false
+        //   continue
+        // }
+        if (Value.isValue(pVal)) {
+            if (!Value.match(pVal, vVal))
+                return false;
+            continue;
+        }
+        if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(pVal, vVal)) {
+            continue;
+        }
+        if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) {
+            continue;
+        }
+        if (pVal !== vVal)
+            continue;
     }
-    if (!isPartial && pKeys.length - optionalCount !== vKeys.length) {
-        return false;
+    const keysMatch = pKeys.every((key) => vKeys.includes(key)) && vKeys.every((key) => pKeys.includes(key));
+    if (!keysMatch) {
+        for (let i = 0; i < pKeys.length; i++) {
+            if (vKeys.includes(pKeys[i]))
+                continue;
+            const pVal = pattern[pKeys[i]];
+            const vVal = value[pKeys[i]];
+            if (vVal === undefined) {
+                if (!OptionalValue.isOptionalValue(pVal))
+                    return false;
+                continue;
+            }
+            if (Value.isValue(pVal)) {
+                if (!Value.match(pVal, vVal))
+                    return false;
+                continue;
+            }
+            if (Array.isArray(pVal) && Array.isArray(vVal)) {
+                if (!deepArrayEq(pVal, vVal))
+                    return false;
+                continue;
+            }
+            if (isObject(pVal) && isObject(vVal)) {
+                if (!deepObjectEq(pVal, vVal))
+                    return false;
+                continue;
+            }
+            if (pVal !== vVal)
+                continue;
+        }
     }
     return true;
 }

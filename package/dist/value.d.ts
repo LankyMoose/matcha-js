@@ -1,4 +1,4 @@
-import { ClassRef } from "./types.js";
+import { ClassRef, Obj } from "./types.js";
 export { type, optional, nullable, Value, _, omniMatch };
 declare class Value {
     #private;
@@ -12,7 +12,7 @@ declare class AnyValue extends Value {
     private readonly [anySymbol];
     get [Symbol.toStringTag](): string;
     static isAnyValue(val: any): val is AnyValue;
-    static isPartialObject(val: any): boolean;
+    static isPartialObject(val: Obj): boolean;
 }
 declare const _: AnyValue;
 declare class TypedValue<T> extends Value {
