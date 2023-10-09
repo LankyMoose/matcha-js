@@ -79,8 +79,6 @@ match([1, 2, 3, 4, 5, "Test", {}, []])(
 // "value is [...(a number), (a string), ..._]"
 ```
 
-````
-
 Classes:
 
 ```js
@@ -93,7 +91,7 @@ match(value)(
   [Number, () => console.log("value is a number")]
 )
 // "value is a string"
-````
+```
 
 Regex:
 
