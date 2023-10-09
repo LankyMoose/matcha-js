@@ -209,10 +209,6 @@ function deepObjectEq(pattern, value) {
             }
             return false;
         }
-        // if (pVal === null) {
-        //   if (vVal !== null) return false
-        //   continue
-        // }
         if (Value.isValue(pVal)) {
             if (!Value.match(pVal, vVal))
                 return false;
@@ -224,8 +220,9 @@ function deepObjectEq(pattern, value) {
         if (isObject(pVal) && isObject(vVal) && deepObjectEq(pVal, vVal)) {
             continue;
         }
+        console.log(pVal, vVal);
         if (pVal !== vVal)
-            continue;
+            return false;
     }
     const pOnlyKeys = pKeys.filter((key) => !vKeys.includes(key));
     if (pOnlyKeys.length > 0) {

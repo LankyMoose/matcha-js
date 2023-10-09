@@ -210,7 +210,7 @@ function deepObjectEq(pattern: Obj, value: Obj) {
       continue
     }
 
-    if (pVal !== vVal) continue
+    if (pVal !== vVal) return false
   }
 
   const pOnlyKeys = pKeys.filter((key) => !vKeys.includes(key))

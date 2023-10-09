@@ -1,6 +1,6 @@
 {
   "name": "matcha-js",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A simple pattern matcher for javascript with zero dependancies",
   "main": "dist/index.js",
   "type": "module",
@@ -18,5 +18,8 @@
     "patternmatch"
   ],
   "author": "Robby6Strings",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.8.2"
+  }
 }
