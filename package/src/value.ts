@@ -184,44 +184,20 @@ function deepObjectEq(value: Obj, pattern: Obj) {
   const pKeys = Object.keys(pattern).sort()
   const vKeys = Object.keys(value).sort()
 
-  for (let i = 0; i < vKeys.length; i++) {
-    const vKey = vKeys[i]
+  if (isPartial) {
+    for (let i = 0; i < pKeys.length; i++) {
+      const pKey = pKeys[i]
 
-    const pVal = pattern[vKey]
-    const vVal = value[vKey]
+      const pVal = pattern[pKey]
+      const vVal = value[pKey]
 
-    if (pVal === undefined) {
-      if (isPartial && vVal !== undefined) {
-        continue
+      if (pVal === undefined) {
+        if (isPartial) continue
+        return false
       }
-      return false
-    }
 
-    if (Value.isValue(pVal)) {
-      if (!Value.match(pVal, vVal)) return false
-      continue
-    }
-
-    if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(vVal, pVal)) {
-      continue
-    }
-
-    if (isObject(pVal) && isObject(vVal) && deepObjectEq(vVal, pVal)) {
-      continue
-    }
-
-    if (pVal !== vVal) return false
-  }
-
-  const pOnlyKeys = pKeys.filter((key) => !vKeys.includes(key))
-
-  if (pOnlyKeys.length > 0) {
-    for (let i = 0; i < pOnlyKeys.length; i++) {
-      const pVal = pattern[pOnlyKeys[i]]
-      const vVal = value[pOnlyKeys[i]]
-
-      if (vVal === undefined) {
-        if (!OptionalValue.isOptionalValue(pVal)) return false
+      if (pVal === null) {
+        if (vVal !== null) return false
         continue
       }
 
@@ -230,17 +206,61 @@ function deepObjectEq(value: Obj, pattern: Obj) {
         continue
       }
 
-      if (Array.isArray(pVal) && Array.isArray(vVal)) {
-        if (!deepArrayEq(vVal, pVal)) return false
+      if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(vVal, pVal)) {
         continue
       }
 
-      if (isObject(pVal) && isObject(vVal)) {
-        if (!deepObjectEq(vVal, pVal)) return false
+      if (isObject(pVal) && isObject(vVal) && deepObjectEq(vVal, pVal)) {
         continue
       }
 
-      if (pVal !== vVal) continue
+      if (pVal !== vVal) return false
+    }
+  } else {
+    for (let i = 0; i < vKeys.length; i++) {
+      const vKey = vKeys[i]
+
+      const pVal = pattern[vKey]
+      const vVal = value[vKey]
+
+      if (pVal === undefined) {
+        if (isPartial) continue
+        return false
+      }
+
+      if (pVal === null) {
+        if (vVal !== null) return false
+        continue
+      }
+
+      if (Value.isValue(pVal)) {
+        if (!Value.match(pVal, vVal)) return false
+        continue
+      }
+
+      if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(vVal, pVal)) {
+        continue
+      }
+
+      if (isObject(pVal) && isObject(vVal) && deepObjectEq(vVal, pVal)) {
+        continue
+      }
+
+      if (pVal !== vVal) return false
+    }
+
+    const pOnlyKeys = pKeys.filter((key) => !vKeys.includes(key))
+
+    if (pOnlyKeys.length > 0) {
+      for (let i = 0; i < pOnlyKeys.length; i++) {
+        const pVal = pattern[pOnlyKeys[i]]
+
+        if (pVal === undefined || pVal === null) return false
+
+        if (OptionalValue.isOptionalValue(pVal)) continue
+
+        return false
+      }
     }
   }
 
@@ -399,6 +419,14 @@ function primitiveMatch(value: unknown, pattern: unknown) {
   return false
 }
 
+function arrayMatch(value: unknown, pattern: unknown) {
+  if (!Array.isArray(value)) return false
+
+  if (pattern === Array) return true
+
+  return Array.isArray(pattern) && deepArrayEq(value, pattern)
+}
+
 function objectMatch(value: unknown, pattern: unknown) {
   if (!isObject(value)) return false
 
@@ -413,17 +441,8 @@ function omniMatch(value: unknown, pattern: unknown) {
   return (
     value === pattern ||
     primitiveMatch(value, pattern) ||
-    objectMatch(value, pattern) ||
     arrayMatch(value, pattern) ||
     (Value.isValue(pattern) && Value.match(pattern, value)) ||
     objectMatch(value, pattern)
   )
-}
-
-function arrayMatch(value: unknown, pattern: unknown) {
-  if (!Array.isArray(value)) return false
-
-  if (pattern === Array) return true
-
-  return Array.isArray(pattern) && deepArrayEq(value, pattern)
 }

@@ -1,4 +1,4 @@
-import { match, _, type } from "matcha-js"
+import { match, _, type, optional } from "matcha-js"
 
 // match({ a: 1, b: 2 })(
 //   [{ a: type(Number), b: "asd", ..._ }, () => console.log("matched")],
@@ -10,7 +10,7 @@ import { match, _, type } from "matcha-js"
 //   [_, () => console.log("nope")]
 // )
 
-match({ x: 1, y: 2, z: 3, a: "" })(
-  [{ x: 1, ..._, a: type(String) }, () => console.log("matched")],
+match({ x: 1, y: 2, z: 3, a: "", b: undefined })(
+  [{ x: 1, ..._, b: optional(String) }, () => console.log("matched")],
   [_, () => console.log("nope")]
 )
