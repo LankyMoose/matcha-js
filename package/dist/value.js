@@ -227,13 +227,11 @@ function deepObjectEq(pattern, value) {
         if (pVal !== vVal)
             continue;
     }
-    const keysMatch = pKeys.every((key) => vKeys.includes(key)) && vKeys.every((key) => pKeys.includes(key));
-    if (!keysMatch) {
-        for (let i = 0; i < pKeys.length; i++) {
-            if (vKeys.includes(pKeys[i]))
-                continue;
-            const pVal = pattern[pKeys[i]];
-            const vVal = value[pKeys[i]];
+    const pOnlyKeys = pKeys.filter((key) => !vKeys.includes(key));
+    if (pOnlyKeys.length > 0) {
+        for (let i = 0; i < pOnlyKeys.length; i++) {
+            const pVal = pattern[pOnlyKeys[i]];
+            const vVal = value[pOnlyKeys[i]];
             if (vVal === undefined) {
                 if (!OptionalValue.isOptionalValue(pVal))
                     return false;

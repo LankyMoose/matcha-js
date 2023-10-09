@@ -10,7 +10,7 @@ import { match, optional, _ } from "matcha-js"
 //   [_, () => console.log("nope")]
 // )
 
-match({ x: 1, y: 2, z: 3 })(
+match({ x: 1, y: 2, z: 3, a: 123 })(
   [{ x: 1, ..._, a: 123 }, () => console.log("matched")],
   [_, () => console.log("nope")]
 )
