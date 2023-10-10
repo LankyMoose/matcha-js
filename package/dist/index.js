@@ -8,7 +8,7 @@ function match(value) {
         for (const [pattern, res] of items) {
             const match = omniMatch(value, pattern);
             if (match)
-                return typeof res === "function" ? res(match.value) : res;
+                return res(match.value);
         }
         throw new Error("No match found");
     });
