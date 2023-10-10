@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert"
 
-import { match, type, _, nullable, optional } from "matcha-js"
+import { match, type, _, nullable, optional, is } from "matcha-js"
 
 test("primitive value", () => {
   const expected = 42
@@ -272,6 +272,21 @@ test("nested partial object", () => {
   const expected = 42
   const actual = match({ x: 1, y: { z: 2, a: "test" } })(
     [{ x: 1, y: { z: type(Number), ..._ } }, () => expected],
+    [_, () => "nope"]
+  )
+
+  assert.strictEqual(actual, expected)
+})
+
+test("nested match", () => {
+  const expected = 42
+  const actual = match({ x: 1 })(
+    is({ y: optional(Number), ..._ }, (val) =>
+      match(val)(
+        is({ x: type(Number), ..._ }, () => expected),
+        [_, () => "nope"]
+      )
+    ),
     [_, () => "nope"]
   )
 
