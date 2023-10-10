@@ -1,7 +1,10 @@
-# **PatternMatcher**
+# **Matcha-JS**
 
 #### _A super simple pattern-matching package for javascript, with zero dependencies._
 
+<br />
+
+![alt text](../assets/result_type_inference.png)
 <br />
 
 Usage:
@@ -28,9 +31,25 @@ const y = match(42)(
 console.log(y) // "something else"
 ```
 
+If we want to take advantage of matcha's type inference, we can use the `is` function to type-narrow the variable the the match handler:
+
+![alt text](../assets/handler_type_inference.png)
+
+```ts
+import { match, type } from "matcha-js"
+
+const someVariable: unknown = { x: 0, y: 0 }
+
+match(x)(
+  is({ x: type(Number), y: type(Number) }, (pt) => console.log(pt.x, pt.y)),
+  [_, () => console.log("not a point")]
+)
+// 0 0
+```
+
 Objects:
 
-```js
+```ts
 import { match, type } from "matcha-js"
 
 const point = { x: 1, y: 2 }
@@ -51,7 +70,7 @@ match({ x: 1, y: { z: 2, a: "test" } })([
 
 Arrays:
 
-```js
+```ts
 import { match, type } from "matcha-js"
 
 const value = [1, 2, 3]
@@ -155,15 +174,4 @@ match({ a: 123 })([
   () => console.log("value is {a: (a number), b: (a string or undefined)}"),
 ])
 // "value is {a: (a number), b: (a string or undefined)}"
-```
-
-Multi-type matching:
-
-```js
-import { match, type, _ } from "matcha-js"
-
-match("1")(
-  [type(String, Number), () => console.log("value is string or number")],
-  [_, () => console.log("value is not string or number")]
-)
 ```

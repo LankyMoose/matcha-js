@@ -1,11 +1,11 @@
-import { ClassRef, Obj } from "./types.js";
-export { type, optional, nullable, Value, _, omniMatch };
+import { ClassRef, MatchResult, Obj } from "./types.js";
+export { type, optional, nullable, Value, AnyValue, NullableValue, OptionalValue, TypedValue, _, omniMatch, anySymbol, };
 declare class Value {
     #private;
     get isSpread(): boolean;
     static isValue(val: any): val is Value;
-    static match<T>(value: Value, val: T): boolean;
-    [Symbol.iterator](): Iterator<Value>;
+    static match<V extends Value>(value: V, val: unknown): MatchResult<V> | void;
+    [Symbol.iterator](): Iterator<this>;
 }
 declare const anySymbol: unique symbol;
 declare class AnyValue extends Value {
@@ -15,28 +15,28 @@ declare class AnyValue extends Value {
     static isPartialObject(val: Obj): boolean;
 }
 declare const _: AnyValue;
-declare class TypedValue extends Value {
-    private readonly classRefs;
-    constructor(...classRefs: ClassRef<unknown>[]);
+declare class TypedValue<T extends ClassRef<unknown>> extends Value {
+    private classRef;
+    constructor(classRef: T);
     get [Symbol.toStringTag](): string;
-    static isTypedValue(val: any): val is TypedValue;
-    match(val: any): boolean;
+    static isTypedValue(val: any): val is TypedValue<ClassRef<unknown>>;
+    match(val: unknown): MatchResult<this> | void;
 }
-declare class OptionalValue extends Value {
-    private readonly classRefs;
-    constructor(...classRefs: ClassRef<unknown>[]);
+declare class OptionalValue<T extends ClassRef<unknown>> extends Value {
+    private classRef;
+    constructor(classRef: T);
     get [Symbol.toStringTag](): string;
-    static isOptionalValue(val: any): val is OptionalValue;
-    match(val: any): boolean;
+    static isOptionalValue(val: any): val is OptionalValue<ClassRef<unknown>>;
+    match(value: unknown): MatchResult<this> | void;
 }
-declare class NullableValue extends Value {
-    private readonly classRefs;
-    constructor(...classRefs: ClassRef<unknown>[]);
+declare class NullableValue<T extends ClassRef<unknown>> extends Value {
+    private classRef;
+    constructor(classRef: T);
     get [Symbol.toStringTag](): string;
-    static isNullableValue(val: any): val is NullableValue;
-    match(val: any): boolean;
+    static isNullableValue(val: any): val is NullableValue<ClassRef<unknown>>;
+    match(value: unknown): MatchResult<this> | void;
 }
-declare function optional(...classRefs: ClassRef<unknown>[]): OptionalValue;
-declare function type(...classRefs: ClassRef<unknown>[]): TypedValue;
-declare function nullable(...classRefs: ClassRef<unknown>[]): NullableValue;
-declare function omniMatch(value: unknown, pattern: unknown): boolean;
+declare function optional<T extends ClassRef<unknown>>(classRef: T): OptionalValue<T>;
+declare function type<T extends ClassRef<unknown>>(classRef: T): TypedValue<T>;
+declare function nullable<T extends ClassRef<unknown>>(classRef: T): NullableValue<T>;
+declare function omniMatch<T>(value: unknown, pattern: T): MatchResult<T> | void;

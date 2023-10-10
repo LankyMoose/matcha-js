@@ -1,6 +1,18 @@
-import { ClassRef, Constructor, Obj } from "./types.js"
+import { ClassRef, Constructor, MatchResult, Obj, Resolved } from "./types.js"
 
-export { type, optional, nullable, Value, _, omniMatch }
+export {
+  type,
+  optional,
+  nullable,
+  Value,
+  AnyValue,
+  NullableValue,
+  OptionalValue,
+  TypedValue,
+  _,
+  omniMatch,
+  anySymbol,
+}
 
 class Value {
   #_isSpread: boolean = false
@@ -18,16 +30,17 @@ class Value {
     )
   }
 
-  static match<T>(value: Value, val: T) {
-    if (AnyValue.isAnyValue(value)) return true
-    if (TypedValue.isTypedValue(value)) return value.match(val)
-    if (OptionalValue.isOptionalValue(value)) return value.match(val)
-    if (NullableValue.isNullableValue(value)) return value.match(val)
-
-    return false
+  static match<V extends Value>(value: V, val: unknown): MatchResult<V> | void {
+    if (AnyValue.isAnyValue(value)) return { value } as MatchResult<V>
+    if (
+      TypedValue.isTypedValue(value) ||
+      OptionalValue.isOptionalValue(value) ||
+      NullableValue.isNullableValue(value)
+    )
+      return value.match(val) as MatchResult<V>
   }
 
-  [Symbol.iterator](): Iterator<Value> {
+  [Symbol.iterator](): Iterator<this> {
     let i = 0
     return {
       next: () => {
@@ -62,102 +75,102 @@ class AnyValue extends Value {
 
 const _ = new AnyValue()
 
-class TypedValue extends Value {
-  private readonly classRefs: ClassRef<unknown>[]
-  constructor(...classRefs: ClassRef<unknown>[]) {
+class TypedValue<T extends ClassRef<unknown>> extends Value {
+  constructor(private classRef: T) {
     super()
-    this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
     return "MatchaTyped"
   }
-  static isTypedValue(val: any): val is TypedValue {
+  static isTypedValue(val: any): val is TypedValue<ClassRef<unknown>> {
     return val.toString() === "[object MatchaTyped]"
   }
 
-  match(val: any) {
-    return matchTypes(val, this.classRefs)
+  match(val: unknown): MatchResult<this> | void {
+    return matchType(val, this.classRef) as MatchResult<this>
   }
 }
 
-class OptionalValue extends Value {
-  private readonly classRefs: ClassRef<unknown>[]
-  constructor(...classRefs: ClassRef<unknown>[]) {
+class OptionalValue<T extends ClassRef<unknown>> extends Value {
+  constructor(private classRef: T) {
     super()
-    this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
     return "MatchaOptional"
   }
-  static isOptionalValue(val: any): val is OptionalValue {
+  static isOptionalValue(val: any): val is OptionalValue<ClassRef<unknown>> {
     return val.toString() === "[object MatchaOptional]"
   }
-  match(val: any) {
-    if (val === undefined) return true
-    if (val === null) return false // null is not optional
-    return matchTypes(val, this.classRefs)
+  match(value: unknown): MatchResult<this> | void {
+    if (value === undefined) return { value } as MatchResult<this>
+    if (value === null) return // null is not optional
+    return matchType(value, this.classRef) as MatchResult<this>
   }
 }
 
-class NullableValue extends Value {
-  private readonly classRefs: ClassRef<unknown>[]
-  constructor(...classRefs: ClassRef<unknown>[]) {
+class NullableValue<T extends ClassRef<unknown>> extends Value {
+  constructor(private classRef: T) {
     super()
-    this.classRefs = classRefs
   }
   get [Symbol.toStringTag]() {
     return "MatchaNullable"
   }
-  static isNullableValue(val: any): val is NullableValue {
+  static isNullableValue(val: any): val is NullableValue<ClassRef<unknown>> {
     return val.toString() === "[object MatchaNullable]"
   }
-  match(val: any) {
-    if (val === null) return true
-    if (val === undefined) return false // undefined is not nullable
-    return matchTypes(val, this.classRefs)
+  match(value: unknown): MatchResult<this> | void {
+    if (value === null) return { value } as MatchResult<this>
+    if (value === undefined) return // undefined is not nullable
+    return matchType(value, this.classRef) as MatchResult<this>
   }
 }
 
-function optional(...classRefs: ClassRef<unknown>[]) {
-  return new OptionalValue(...classRefs)
+function optional<T extends ClassRef<unknown>>(classRef: T) {
+  return new OptionalValue(classRef)
 }
 
-function type(...classRefs: ClassRef<unknown>[]) {
-  return new TypedValue(...classRefs)
+function type<T extends ClassRef<unknown>>(classRef: T) {
+  return new TypedValue(classRef)
 }
 
-function nullable(...classRefs: ClassRef<unknown>[]) {
-  return new NullableValue(...classRefs)
+function nullable<T extends ClassRef<unknown>>(classRef: T) {
+  return new NullableValue(classRef)
 }
 
-function matchTypes(val: any, classRefs: ClassRef<unknown>[]) {
-  return classRefs.some((classRef) => matchType(val, classRef))
-}
-
-function matchType(val: any, classRef: ClassRef<unknown>) {
+function matchType<T>(value: T, classRef: ClassRef<unknown>): MatchResult<T> | void {
   switch (classRef) {
     case String:
-      return typeof val === "string"
+      if (typeof value === "string") return { value } as MatchResult<T>
+      break
     case Number:
-      return typeof val === "number"
+      if (typeof value === "number") return { value } as MatchResult<T>
+      break
     case Boolean:
-      return typeof val === "boolean"
+      if (typeof value === "boolean") return { value } as MatchResult<T>
+      break
     case BigInt:
-      return typeof val === "bigint"
+      if (typeof value === "bigint") return { value } as MatchResult<T>
+      break
     case Symbol:
-      return typeof val === "symbol"
+      if (typeof value === "symbol") return { value } as MatchResult<T>
+      break
     case Array:
-      return Array.isArray(val)
+      if (Array.isArray(value)) return { value } as MatchResult<T>
+      break
     case Object:
-      return isObject(val)
+      if (isObject(value)) return { value } as MatchResult<T>
+      break
     case Error:
-      return val instanceof Error
+      if (value instanceof Error) return { value } as MatchResult<T>
+      break
     case Promise:
-      return val instanceof Promise
+      if (value instanceof Promise) return { value } as MatchResult<T>
+      break
     case Date:
-      return val instanceof Date
+      if (value instanceof Date) return { value } as MatchResult<T>
+      break
     default:
-      return val instanceof classRef
+      if (value instanceof classRef) return { value } as MatchResult<T>
   }
 }
 
@@ -178,11 +191,10 @@ function isObject(value: any): value is Obj {
   )
 }
 
-function deepObjectEq(value: Obj, pattern: Obj) {
+function deepObjectEq<T extends Obj>(value: Obj, pattern: T): MatchResult<T> | void {
   const isPartial = AnyValue.isPartialObject(pattern)
 
   const pKeys = Object.keys(pattern).sort()
-  const vKeys = Object.keys(value).sort()
 
   if (isPartial) {
     for (let i = 0; i < pKeys.length; i++) {
@@ -193,16 +205,16 @@ function deepObjectEq(value: Obj, pattern: Obj) {
 
       if (pVal === undefined) {
         if (isPartial) continue
-        return false
+        return
       }
 
       if (pVal === null) {
-        if (vVal !== null) return false
+        if (vVal !== null) return
         continue
       }
 
       if (Value.isValue(pVal)) {
-        if (!Value.match(pVal, vVal)) return false
+        if (!Value.match(pVal, vVal)) return
         continue
       }
 
@@ -214,9 +226,11 @@ function deepObjectEq(value: Obj, pattern: Obj) {
         continue
       }
 
-      if (pVal !== vVal) return false
+      if (pVal !== vVal) return
     }
   } else {
+    const vKeys = Object.keys(value).sort()
+
     for (let i = 0; i < vKeys.length; i++) {
       const vKey = vKeys[i]
 
@@ -225,16 +239,16 @@ function deepObjectEq(value: Obj, pattern: Obj) {
 
       if (pVal === undefined) {
         if (isPartial) continue
-        return false
+        return
       }
 
       if (pVal === null) {
-        if (vVal !== null) return false
+        if (vVal !== null) return
         continue
       }
 
       if (Value.isValue(pVal)) {
-        if (!Value.match(pVal, vVal)) return false
+        if (!Value.match(pVal, vVal)) return
         continue
       }
 
@@ -246,7 +260,7 @@ function deepObjectEq(value: Obj, pattern: Obj) {
         continue
       }
 
-      if (pVal !== vVal) return false
+      if (pVal !== vVal) return
     }
 
     const pOnlyKeys = pKeys.filter((key) => !vKeys.includes(key))
@@ -255,19 +269,22 @@ function deepObjectEq(value: Obj, pattern: Obj) {
       for (let i = 0; i < pOnlyKeys.length; i++) {
         const pVal = pattern[pOnlyKeys[i]]
 
-        if (pVal === undefined || pVal === null) return false
+        if (pVal === undefined || pVal === null) return
 
         if (OptionalValue.isOptionalValue(pVal)) continue
 
-        return false
+        return
       }
     }
   }
 
-  return true
+  return { value } as MatchResult<T>
 }
 
-function deepArrayEq(value: Array<unknown>, pattern: Array<unknown>) {
+function deepArrayEq<T extends Array<unknown>>(
+  value: Array<unknown>,
+  pattern: T
+): MatchResult<T> | void {
   let pi = 0
   let vi = 0
 
@@ -303,24 +320,24 @@ function deepArrayEq(value: Array<unknown>, pattern: Array<unknown>) {
       }
 
       if (!omniMatch(vItem, nextPatternItem)) {
-        return false
+        return
       }
 
       pi++
-      if (pi > value.length) return false
-      if (pi > pattern.length) return false
+      if (pi > value.length) return
+      if (pi > pattern.length) return
       continue
     }
 
     if (isObject(pItem) && isObject(vItem)) {
-      if (!deepObjectEq(vItem, pItem)) return false
+      if (!deepObjectEq(vItem, pItem)) return
       pi++
       vi++
       continue
     }
 
     if (Array.isArray(pItem) && Array.isArray(vItem)) {
-      if (!deepArrayEq(vItem, pItem)) return false
+      if (!deepArrayEq(vItem, pItem)) return
       pi++
       vi++
       continue
@@ -331,7 +348,7 @@ function deepArrayEq(value: Array<unknown>, pattern: Array<unknown>) {
       vi++
       continue
     } else {
-      if (!pItem) return false
+      if (!pItem) return
       // handle cases where:
       // value = ["start", "middle", "end", "the very end"]
       // pattern = [...type(String), "end", "the very end"]
@@ -357,7 +374,7 @@ function deepArrayEq(value: Array<unknown>, pattern: Array<unknown>) {
       }
 
       if (Array.isArray(pItem) && Array.isArray(vItem)) {
-        if (!deepArrayEq(vItem, pItem)) return false
+        if (!deepArrayEq(vItem, pItem)) return
         pi++
         vi++
         continue
@@ -370,79 +387,82 @@ function deepArrayEq(value: Array<unknown>, pattern: Array<unknown>) {
       }
 
       if (isObject(pItem) && isObject(vItem)) {
-        if (!deepObjectEq(vItem, pItem)) return false
+        if (!deepObjectEq(vItem, pItem)) return
         pi++
         vi++
         continue
       }
 
-      return false
+      return
     }
   }
 
-  return true
+  return { value } as MatchResult<T>
 }
 
-function primitiveMatch(value: unknown, pattern: unknown) {
+function primitiveMatch<T>(value: unknown, pattern: T): MatchResult<T> | void {
   switch (typeof value) {
     case "string":
-      if (
-        pattern === String ||
-        (typeof pattern === "string" && pattern === value) ||
-        (pattern instanceof RegExp && pattern.test(value))
-      )
-        return true
+      if (pattern === String || (typeof pattern === "string" && pattern === value))
+        return { value } as MatchResult<T>
+      if (pattern instanceof RegExp) {
+        const match = pattern.exec(value)
+        if (match) return { value: match as Resolved<T> }
+      }
       break
     case "number":
       if (pattern === Number || (typeof pattern === "number" && pattern === value))
-        return true
+        return { value } as MatchResult<T>
       break
     case "boolean":
       if (pattern === Boolean || (typeof pattern === "boolean" && pattern === value))
-        return true
+        return { value } as MatchResult<T>
       break
     case "bigint":
       if (pattern === BigInt || (typeof pattern === "bigint" && pattern === value))
-        return true
+        return { value } as MatchResult<T>
       break
     case "symbol":
       if (pattern === Symbol || (typeof pattern === "symbol" && pattern === value))
-        return true
+        return { value } as MatchResult<T>
       break
     case "function":
       if (pattern === Function || (typeof pattern === "function" && pattern === value))
-        return true
+        return { value } as MatchResult<T>
       break
     default:
       break
   }
-  return false
 }
 
-function arrayMatch(value: unknown, pattern: unknown) {
-  if (!Array.isArray(value)) return false
+function arrayMatch<T>(value: unknown, pattern: T): MatchResult<T> | void {
+  if (!Array.isArray(value)) return
 
-  if (pattern === Array) return true
+  if (pattern === Array) return { value } as MatchResult<T>
 
-  return Array.isArray(pattern) && deepArrayEq(value, pattern)
+  if (Array.isArray(pattern)) return deepArrayEq(value, pattern)
 }
 
-function objectMatch(value: unknown, pattern: unknown) {
-  if (!isObject(value)) return false
+function objectMatch<T>(value: unknown, pattern: T): MatchResult<T> | void {
+  if (!isObject(value)) return
 
-  if (pattern === Object) return true
+  if (pattern === Object) return { value } as MatchResult<T>
 
-  if (isConstructor(pattern) && value instanceof pattern) return true
+  if (isConstructor(pattern) && value instanceof pattern)
+    return { value } as MatchResult<T>
 
-  return isObject(pattern) && deepObjectEq(value, pattern)
+  if (isObject(pattern)) return deepObjectEq(value, pattern)
 }
 
-function omniMatch(value: unknown, pattern: unknown) {
-  return (
-    value === pattern ||
-    primitiveMatch(value, pattern) ||
-    arrayMatch(value, pattern) ||
-    (Value.isValue(pattern) && Value.match(pattern, value)) ||
-    objectMatch(value, pattern)
-  )
+function valueMatch<T>(value: unknown, pattern: T): MatchResult<T> | void {
+  if (Value.isValue(pattern)) return Value.match(pattern, value)
+}
+
+function omniMatch<T>(value: unknown, pattern: T): MatchResult<T> | void {
+  return value === pattern
+    ? ({ value } as MatchResult<T>)
+    : primitiveMatch(value, pattern) ||
+        arrayMatch(value, pattern) ||
+        valueMatch(value, pattern) ||
+        objectMatch(value, pattern)
 }

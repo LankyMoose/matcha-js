@@ -1,4 +1,8 @@
-import type { MatchItem } from "./types.js";
-export * from "./value.js";
-export { match };
-declare function match<T>(value: T): <MI extends MatchItem<T>[]>(...items: MI) => MI[number][1] extends Function ? ReturnType<MI[number][1]> : MI[number][1];
+import type { Fn, LHS, Resolved } from "./types.js";
+import { type, optional, nullable, Value, _ } from "./value.js";
+export { match, type, optional, nullable, Value, _, is };
+/**
+ * @throws {Error} if no match is found
+ */
+declare function match(value: any): <U extends [any, Fn<any, any>][]>(...items: U) => ReturnType<U[number][1]>;
+declare function is<T, U>(val: T, func: (val: Resolved<T>) => U): [LHS<T>, (val: Resolved<T>) => U];

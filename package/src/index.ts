@@ -1,21 +1,22 @@
-import type { MatchItem } from "./types.js"
-import { omniMatch } from "./value.js"
+import type { Fn, LHS, Resolved } from "./types.js"
+import { omniMatch, type, optional, nullable, Value, _ } from "./value.js"
 
-export * from "./value.js"
+export { match, type, optional, nullable, Value, _, is }
 
-export { match }
+/**
+ * @throws {Error} if no match is found
+ */
+function match(value: any) {
+  return ((...items: [any, Fn<any, any>][]) => {
+    for (const [pattern, res] of items) {
+      const match = omniMatch(value, pattern)
+      if (match) return (typeof res === "function" && res(match.value)) || res
+    }
 
-function matchSuccess<T>(item: MatchItem<T>, value: T) {
-  return typeof item[1] === "function" ? item[1](value) : item[1]
+    throw new Error("No match found")
+  }) as <U extends [any, Fn<any, any>][]>(...items: U) => ReturnType<U[number][1]>
 }
 
-function match<T>(value: T) {
-  return <MI extends MatchItem<T>[]>(
-    ...items: MI
-  ): MI[number][1] extends Function ? ReturnType<MI[number][1]> : MI[number][1] => {
-    for (const item of items) {
-      if (omniMatch(value, item[0])) return matchSuccess(item, value)
-    }
-    throw new Error("No match found")
-  }
+function is<T, U>(val: T, func: (val: Resolved<T>) => U) {
+  return [val, func] as [LHS<T>, (val: Resolved<T>) => U]
 }

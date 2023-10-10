@@ -10,7 +10,7 @@ var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (
     return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
 };
 var _Value__isSpread, _a;
-export { type, optional, nullable, Value, _, omniMatch };
+export { type, optional, nullable, Value, AnyValue, NullableValue, OptionalValue, TypedValue, _, omniMatch, anySymbol, };
 class Value {
     constructor() {
         _Value__isSpread.set(this, false);
@@ -28,14 +28,11 @@ class Value {
     }
     static match(value, val) {
         if (AnyValue.isAnyValue(value))
-            return true;
-        if (TypedValue.isTypedValue(value))
+            return { value };
+        if (TypedValue.isTypedValue(value) ||
+            OptionalValue.isOptionalValue(value) ||
+            NullableValue.isNullableValue(value))
             return value.match(val);
-        if (OptionalValue.isOptionalValue(value))
-            return value.match(val);
-        if (NullableValue.isNullableValue(value))
-            return value.match(val);
-        return false;
     }
     [(_Value__isSpread = new WeakMap(), Symbol.iterator)]() {
         let i = 0;
@@ -76,15 +73,14 @@ class AnyValue extends Value {
 }
 const _ = new AnyValue();
 class TypedValue extends Value {
-    constructor(...classRefs) {
+    constructor(classRef) {
         super();
-        Object.defineProperty(this, "classRefs", {
+        Object.defineProperty(this, "classRef", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: void 0
+            value: classRef
         });
-        this.classRefs = classRefs;
     }
     get [Symbol.toStringTag]() {
         return "MatchaTyped";
@@ -93,19 +89,18 @@ class TypedValue extends Value {
         return val.toString() === "[object MatchaTyped]";
     }
     match(val) {
-        return matchTypes(val, this.classRefs);
+        return matchType(val, this.classRef);
     }
 }
 class OptionalValue extends Value {
-    constructor(...classRefs) {
+    constructor(classRef) {
         super();
-        Object.defineProperty(this, "classRefs", {
+        Object.defineProperty(this, "classRef", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: void 0
+            value: classRef
         });
-        this.classRefs = classRefs;
     }
     get [Symbol.toStringTag]() {
         return "MatchaOptional";
@@ -113,24 +108,23 @@ class OptionalValue extends Value {
     static isOptionalValue(val) {
         return val.toString() === "[object MatchaOptional]";
     }
-    match(val) {
-        if (val === undefined)
-            return true;
-        if (val === null)
-            return false; // null is not optional
-        return matchTypes(val, this.classRefs);
+    match(value) {
+        if (value === undefined)
+            return { value };
+        if (value === null)
+            return; // null is not optional
+        return matchType(value, this.classRef);
     }
 }
 class NullableValue extends Value {
-    constructor(...classRefs) {
+    constructor(classRef) {
         super();
-        Object.defineProperty(this, "classRefs", {
+        Object.defineProperty(this, "classRef", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: void 0
+            value: classRef
         });
-        this.classRefs = classRefs;
     }
     get [Symbol.toStringTag]() {
         return "MatchaNullable";
@@ -138,50 +132,68 @@ class NullableValue extends Value {
     static isNullableValue(val) {
         return val.toString() === "[object MatchaNullable]";
     }
-    match(val) {
-        if (val === null)
-            return true;
-        if (val === undefined)
-            return false; // undefined is not nullable
-        return matchTypes(val, this.classRefs);
+    match(value) {
+        if (value === null)
+            return { value };
+        if (value === undefined)
+            return; // undefined is not nullable
+        return matchType(value, this.classRef);
     }
 }
-function optional(...classRefs) {
-    return new OptionalValue(...classRefs);
+function optional(classRef) {
+    return new OptionalValue(classRef);
 }
-function type(...classRefs) {
-    return new TypedValue(...classRefs);
+function type(classRef) {
+    return new TypedValue(classRef);
 }
-function nullable(...classRefs) {
-    return new NullableValue(...classRefs);
+function nullable(classRef) {
+    return new NullableValue(classRef);
 }
-function matchTypes(val, classRefs) {
-    return classRefs.some((classRef) => matchType(val, classRef));
-}
-function matchType(val, classRef) {
+function matchType(value, classRef) {
     switch (classRef) {
         case String:
-            return typeof val === "string";
+            if (typeof value === "string")
+                return { value };
+            break;
         case Number:
-            return typeof val === "number";
+            if (typeof value === "number")
+                return { value };
+            break;
         case Boolean:
-            return typeof val === "boolean";
+            if (typeof value === "boolean")
+                return { value };
+            break;
         case BigInt:
-            return typeof val === "bigint";
+            if (typeof value === "bigint")
+                return { value };
+            break;
         case Symbol:
-            return typeof val === "symbol";
+            if (typeof value === "symbol")
+                return { value };
+            break;
         case Array:
-            return Array.isArray(val);
+            if (Array.isArray(value))
+                return { value };
+            break;
         case Object:
-            return isObject(val);
+            if (isObject(value))
+                return { value };
+            break;
         case Error:
-            return val instanceof Error;
+            if (value instanceof Error)
+                return { value };
+            break;
         case Promise:
-            return val instanceof Promise;
+            if (value instanceof Promise)
+                return { value };
+            break;
         case Date:
-            return val instanceof Date;
+            if (value instanceof Date)
+                return { value };
+            break;
         default:
-            return val instanceof classRef;
+            if (value instanceof classRef)
+                return { value };
     }
 }
 function isConstructor(value) {
@@ -198,7 +210,6 @@ function isObject(value) {
 function deepObjectEq(value, pattern) {
     const isPartial = AnyValue.isPartialObject(pattern);
     const pKeys = Object.keys(pattern).sort();
-    const vKeys = Object.keys(value).sort();
     if (isPartial) {
         for (let i = 0; i < pKeys.length; i++) {
             const pKey = pKeys[i];
@@ -207,16 +218,16 @@ function deepObjectEq(value, pattern) {
             if (pVal === undefined) {
                 if (isPartial)
                     continue;
-                return false;
+                return;
             }
             if (pVal === null) {
                 if (vVal !== null)
-                    return false;
+                    return;
                 continue;
             }
             if (Value.isValue(pVal)) {
                 if (!Value.match(pVal, vVal))
-                    return false;
+                    return;
                 continue;
             }
             if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(vVal, pVal)) {
@@ -226,10 +237,11 @@ function deepObjectEq(value, pattern) {
                 continue;
             }
             if (pVal !== vVal)
-                return false;
+                return;
         }
     }
     else {
+        const vKeys = Object.keys(value).sort();
         for (let i = 0; i < vKeys.length; i++) {
             const vKey = vKeys[i];
             const pVal = pattern[vKey];
@@ -237,16 +249,16 @@ function deepObjectEq(value, pattern) {
             if (pVal === undefined) {
                 if (isPartial)
                     continue;
-                return false;
+                return;
             }
             if (pVal === null) {
                 if (vVal !== null)
-                    return false;
+                    return;
                 continue;
             }
             if (Value.isValue(pVal)) {
                 if (!Value.match(pVal, vVal))
-                    return false;
+                    return;
                 continue;
             }
             if (Array.isArray(pVal) && Array.isArray(vVal) && deepArrayEq(vVal, pVal)) {
@@ -256,21 +268,21 @@ function deepObjectEq(value, pattern) {
                 continue;
             }
             if (pVal !== vVal)
-                return false;
+                return;
         }
         const pOnlyKeys = pKeys.filter((key) => !vKeys.includes(key));
         if (pOnlyKeys.length > 0) {
             for (let i = 0; i < pOnlyKeys.length; i++) {
                 const pVal = pattern[pOnlyKeys[i]];
                 if (pVal === undefined || pVal === null)
-                    return false;
+                    return;
                 if (OptionalValue.isOptionalValue(pVal))
                     continue;
-                return false;
+                return;
             }
         }
     }
-    return true;
+    return { value };
 }
 function deepArrayEq(value, pattern) {
     let pi = 0;
@@ -303,25 +315,25 @@ function deepArrayEq(value, pattern) {
                 continue;
             }
             if (!omniMatch(vItem, nextPatternItem)) {
-                return false;
+                return;
             }
             pi++;
             if (pi > value.length)
-                return false;
+                return;
             if (pi > pattern.length)
-                return false;
+                return;
             continue;
         }
         if (isObject(pItem) && isObject(vItem)) {
             if (!deepObjectEq(vItem, pItem))
-                return false;
+                return;
             pi++;
             vi++;
             continue;
         }
         if (Array.isArray(pItem) && Array.isArray(vItem)) {
             if (!deepArrayEq(vItem, pItem))
-                return false;
+                return;
             pi++;
             vi++;
             continue;
@@ -333,7 +345,7 @@ function deepArrayEq(value, pattern) {
         }
         else {
             if (!pItem)
-                return false;
+                return;
             // handle cases where:
             // value = ["start", "middle", "end", "the very end"]
             // pattern = [...type(String), "end", "the very end"]
@@ -355,7 +367,7 @@ function deepArrayEq(value, pattern) {
             }
             if (Array.isArray(pItem) && Array.isArray(vItem)) {
                 if (!deepArrayEq(vItem, pItem))
-                    return false;
+                    return;
                 pi++;
                 vi++;
                 continue;
@@ -367,69 +379,78 @@ function deepArrayEq(value, pattern) {
             }
             if (isObject(pItem) && isObject(vItem)) {
                 if (!deepObjectEq(vItem, pItem))
-                    return false;
+                    return;
                 pi++;
                 vi++;
                 continue;
             }
-            return false;
+            return;
         }
     }
-    return true;
+    return { value };
 }
 function primitiveMatch(value, pattern) {
     switch (typeof value) {
         case "string":
-            if (pattern === String ||
-                (typeof pattern === "string" && pattern === value) ||
-                (pattern instanceof RegExp && pattern.test(value)))
-                return true;
+            if (pattern === String || (typeof pattern === "string" && pattern === value))
+                return { value };
+            if (pattern instanceof RegExp) {
+                const match = pattern.exec(value);
+                if (match)
+                    return { value: match };
+            }
             break;
         case "number":
             if (pattern === Number || (typeof pattern === "number" && pattern === value))
-                return true;
+                return { value };
             break;
         case "boolean":
             if (pattern === Boolean || (typeof pattern === "boolean" && pattern === value))
-                return true;
+                return { value };
             break;
         case "bigint":
             if (pattern === BigInt || (typeof pattern === "bigint" && pattern === value))
-                return true;
+                return { value };
             break;
         case "symbol":
             if (pattern === Symbol || (typeof pattern === "symbol" && pattern === value))
-                return true;
+                return { value };
             break;
         case "function":
             if (pattern === Function || (typeof pattern === "function" && pattern === value))
-                return true;
+                return { value };
             break;
         default:
             break;
     }
-    return false;
 }
 function arrayMatch(value, pattern) {
     if (!Array.isArray(value))
-        return false;
+        return;
     if (pattern === Array)
-        return true;
-    return Array.isArray(pattern) && deepArrayEq(value, pattern);
+        return { value };
+    if (Array.isArray(pattern))
+        return deepArrayEq(value, pattern);
 }
 function objectMatch(value, pattern) {
     if (!isObject(value))
-        return false;
+        return;
     if (pattern === Object)
-        return true;
+        return { value };
     if (isConstructor(pattern) && value instanceof pattern)
-        return true;
-    return isObject(pattern) && deepObjectEq(value, pattern);
+        return { value };
+    if (isObject(pattern))
+        return deepObjectEq(value, pattern);
+}
+function valueMatch(value, pattern) {
+    if (Value.isValue(pattern))
+        return Value.match(pattern, value);
 }
 function omniMatch(value, pattern) {
-    return (value === pattern ||
-        primitiveMatch(value, pattern) ||
-        arrayMatch(value, pattern) ||
-        (Value.isValue(pattern) && Value.match(pattern, value)) ||
-        objectMatch(value, pattern));
+    return value === pattern
+        ? { value }
+        : primitiveMatch(value, pattern) ||
+            arrayMatch(value, pattern) ||
+            valueMatch(value, pattern) ||
+            objectMatch(value, pattern);
 }
