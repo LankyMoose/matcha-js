@@ -4,7 +4,7 @@
 
 <br />
 
-![alt text](../assets/result_type_inference.png)
+![Result Type Inference](https://raw.githubusercontent.com/Robby6Strings/matcha-js/main/assets/result_type_inference.png)
 <br />
 
 Usage:
@@ -33,7 +33,7 @@ console.log(y) // "something else"
 
 If we want to take advantage of matcha's type inference, we can use the `is` function to type-narrow the variable the the match handler:
 
-![alt text](../assets/handler_type_inference.png)
+![Result Type Inference](https://raw.githubusercontent.com/Robby6Strings/matcha-js/main/assets/handler_type_inference.png)
 
 ```ts
 import { match, type } from "matcha-js"
