@@ -209,7 +209,7 @@ function isObject(value) {
 }
 function deepObjectEq(value, pattern) {
     const isPartial = AnyValue.isPartialObject(pattern);
-    const pKeys = Object.keys(pattern).sort();
+    const pKeys = Object.keys(pattern);
     if (isPartial) {
         for (let i = 0; i < pKeys.length; i++) {
             const pKey = pKeys[i];
@@ -288,6 +288,8 @@ function deepArrayEq(value, pattern) {
     let pi = 0;
     let vi = 0;
     while (pi < pattern.length || vi < value.length) {
+        if (vi > value.length)
+            return;
         const pItem = pattern[pi];
         const vItem = value[vi];
         if (Value.isValue(pItem)) {

@@ -194,7 +194,7 @@ function isObject(value: any): value is Obj {
 function deepObjectEq<T extends Obj>(value: Obj, pattern: T): MatchResult<T> | void {
   const isPartial = AnyValue.isPartialObject(pattern)
 
-  const pKeys = Object.keys(pattern).sort()
+  const pKeys = Object.keys(pattern)
 
   if (isPartial) {
     for (let i = 0; i < pKeys.length; i++) {
@@ -289,6 +289,7 @@ function deepArrayEq<T extends Array<unknown>>(
   let vi = 0
 
   while (pi < pattern.length || vi < value.length) {
+    if (vi > value.length) return
     const pItem = pattern[pi]
     const vItem = value[vi]
 

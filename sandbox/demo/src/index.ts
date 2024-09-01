@@ -1,22 +1,9 @@
-import { match, is, _, optional, type } from "matcha-js"
+import { match, _, type } from "matcha-js"
 
-const someVariable: unknown = { x: 69, y: 0 }
-
-const res = match(someVariable)(
-  is({ y: 0 }, (val) => val),
-  is({ x: 0, y: 42 }, () => 123),
-  [_, () => 42]
-)
-console.log(res) // 42
-
-const asd = match(someVariable)(
-  is({ x: optional(Number), y: type(Number) }, (pt) =>
-    match(pt.x)(
-      is(Number, (n) => n * 3),
-      [_, () => 42]
-    )
-  ),
-  [_, () => 42]
+const expected = 42
+const actual = match([1, 2, 3, 4, 5, {}, new Date(), null])(
+  [[...type(Number), ..._, type(String)], () => expected],
+  [_, () => console.log("no match")]
 )
 
-console.log("asd", asd) // 42
+console.log(`actual: ${actual}, expected: ${expected}`)
